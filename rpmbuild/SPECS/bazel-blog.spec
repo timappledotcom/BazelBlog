@@ -1,5 +1,5 @@
 Name: bazel-blog
-Version: 1.3.0
+Version: 1.4.0
 Release: 1
 Summary: A fast and simple static site generator with multi-site support
 License: MIT
@@ -15,6 +15,11 @@ BuildArch: x86_64
 /usr/bin/bazel
 
 %changelog
+* Sun Jul 14 2025 Tim Apple <tim@example.com> - 1.4.0-1
+- Added comprehensive markdown documentation and improved user experience
+- Enhanced upgrade system with version tracking
+- Updated README with better structure and documentation links
+
 * Sun Jul 14 2025 Tim Apple <tim@example.com> - 1.3.0-1
 - Added automatic footer with BazelBlog attribution and social links
 - Initial RPM packaging

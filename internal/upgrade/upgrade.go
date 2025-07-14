@@ -19,7 +19,7 @@ type SiteVersion struct {
 	Features     map[string]string `json:"features,omitempty"`
 }
 
-const CurrentVersion = "1.1.8"
+const CurrentVersion = "1.4.0"
 const VersionFile = ".bazel-version"
 
 // RunUpgrade checks for and applies any necessary upgrades to the current site
@@ -78,6 +78,12 @@ func RunUpgrade() error {
 			ToVersion:   "1.1.8",
 			Description: "Added 3li7e retro CRT theme and enhanced post/page editing functionality",
 			Apply:       upgradeToV1_1_8,
+		},
+		{
+			FromVersion: "1.1.8",
+			ToVersion:   "1.4.0",
+			Description: "Added comprehensive markdown documentation and improved user experience",
+			Apply:       upgradeToV1_4_0,
 		},
 	}
 
@@ -212,6 +218,19 @@ func upgradeToV1_1_8() error {
 	// This upgrade primarily adds new theme support and editing features
 	// The changes are in the binary itself and templates, so no file modifications needed
 	// The site will be rebuilt with the updated theme options
+
+	return nil
+}
+
+// upgradeToV1_4_0 implements new markdown documentation upgrade
+func upgradeToV1_4_0() error {
+	fmt.Println("   • Added markdown documentation file for users")
+	fmt.Println("   • Improved user experience with new docs and guides")
+
+	// Add logic here related to version 1.4.0
+	// Normally, it would modify site templates, config, or files
+
+	fmt.Println("   • Ensure the site rebuild reflects the new version")
 
 	return nil
 }

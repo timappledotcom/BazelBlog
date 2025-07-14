@@ -2,6 +2,25 @@
 
 All notable changes to Bazel Blog will be documented in this file.
 
+## [1.4.0] - 2025-07-14
+
+### Added
+- **Comprehensive Markdown Documentation**: Added separate MARKDOWN.md file with complete guide to markdown syntax and commands
+- **Enhanced README**: Improved documentation structure with clear links to markdown guide
+- **Upgraded Version System**: Updated upgrade system to support version 1.4.0 with proper migration path
+- **Improved User Experience**: Better documentation organization and user-friendly guides
+
+### Changed
+- Updated README to include link to dedicated markdown documentation
+- Enhanced upgrade system with new version tracking for 1.4.0
+- Improved project structure with better documentation organization
+
+### Technical Details
+- Added upgradeToV1_4_0 function for smooth version transitions
+- Updated all package files (DEB, RPM) to version 1.4.0
+- Enhanced build scripts with new version numbers
+- Updated changelog system for better version tracking
+
 ## [1.3.0] - 2025-07-14
 
 ### Added

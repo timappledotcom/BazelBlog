@@ -60,6 +60,8 @@ date: January 1, 2025
 Your content here with **markdown** support!
 ```
 
+For a complete guide to markdown syntax and commands, see [MARKDOWN.md](MARKDOWN.md).
+
 #### Pages (HTML)
 ```bash
 bazel page

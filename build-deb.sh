@@ -13,7 +13,7 @@ chmod +x debian/usr/bin/bazel
 
 # Build the package
 echo "Building Debian package..."
-dpkg-deb --build debian bazel-blog_1.3.0_amd64.deb
+dpkg-deb --build debian bazel-blog_1.4.0_amd64.deb
 
-echo "Package built successfully: bazel-blog_1.3.0_amd64.deb"
-echo "Install with: sudo dpkg -i bazel-blog_1.3.0_amd64.deb"
+echo "Package built successfully: bazel-blog_1.4.0_amd64.deb"
+echo "Install with: sudo dpkg -i bazel-blog_1.4.0_amd64.deb"

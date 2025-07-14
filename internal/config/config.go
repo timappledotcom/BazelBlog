@@ -1,24 +1,25 @@
 package config
 
 import (
-	"encoding/json"
 	"fmt"
 	"os"
+
+	"github.com/BurntSushi/toml"
 )
 
 type Config struct {
-	SiteName    string            `json:"site_name"`
-	Title       string            `json:"title"`
-	Description string            `json:"description"`
-	BaseURL     string            `json:"base_url"`
-	Theme       ThemeConfig       `json:"theme"`
-	Socials     map[string]string `json:"socials"`
-	Editor      string            `json:"editor"`
+	SiteName    string            `toml:"site_name"`
+	Title       string            `toml:"title"`
+	Description string            `toml:"description"`
+	BaseURL     string            `toml:"base_url"`
+	Theme       ThemeConfig       `toml:"theme"`
+	Socials     map[string]string `toml:"socials"`
+	Editor      string            `toml:"editor"`
 }
 
 type ThemeConfig struct {
-	ColorScheme string `json:"color_scheme"`
-	Font        string `json:"font"`
+	ColorScheme string `toml:"color_scheme"`
+	Font        string `toml:"font"`
 }
 
 var DefaultConfig = Config{
@@ -94,13 +95,8 @@ func LoadConfig() (*Config, error) {
 		return &config, nil
 	}
 
-	data, err := os.ReadFile(configPath)
-	if err != nil {
-		return nil, fmt.Errorf("failed to read config file: %w", err)
-	}
-
 	var config Config
-	err = json.Unmarshal(data, &config)
+	_, err := toml.DecodeFile(configPath, &config)
 	if err != nil {
 		return nil, fmt.Errorf("failed to parse config file: %w", err)
 	}
@@ -109,14 +105,16 @@ func LoadConfig() (*Config, error) {
 }
 
 func (c *Config) Save() error {
-	data, err := json.MarshalIndent(c, "", "  ")
+	file, err := os.Create("bazel.toml")
 	if err != nil {
-		return fmt.Errorf("failed to marshal config: %w", err)
+		return fmt.Errorf("failed to create config file: %w", err)
 	}
+	defer file.Close()
 
-	err = os.WriteFile("bazel.toml", data, 0644)
+	encoder := toml.NewEncoder(file)
+	err = encoder.Encode(c)
 	if err != nil {
-		return fmt.Errorf("failed to write config file: %w", err)
+		return fmt.Errorf("failed to encode config: %w", err)
 	}
 
 	return nil

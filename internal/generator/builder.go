@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"bytes"
 	"fmt"
 	"html/template"
 	"io/ioutil"
@@ -10,7 +11,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/adrg/frontmatter"
+	"github.com/araddon/dateparse"
+	"github.com/Masterminds/sprig/v3"
 	"github.com/yourusername/bazel_blog/internal/config"
+	"github.com/yuin/goldmark"
+	"github.com/yuin/goldmark/extension"
+	"github.com/yuin/goldmark/parser"
+	goldmarkhtml "github.com/yuin/goldmark/renderer/html"
 )
 
 type Post struct {
@@ -26,6 +34,17 @@ type Page struct {
 	Content  string
 	Filename string
 	URL      string
+}
+
+// PostMatter represents the frontmatter structure for posts
+type PostMatter struct {
+	Title string `yaml:"title"`
+	Date  string `yaml:"date"`
+}
+
+// PageMatter represents the frontmatter structure for pages
+type PageMatter struct {
+	Title string `yaml:"title"`
 }
 
 type Site struct {
@@ -106,72 +125,57 @@ func (s *Site) loadPosts() error {
 		return err
 	}
 
-	for _, file := range files {
-		if strings.HasSuffix(file.Name(), ".md") {
-			content, err := ioutil.ReadFile(filepath.Join(postsDir, file.Name()))
-			if err != nil {
-				continue
-			}
+		for _, file := range files {
+			if strings.HasSuffix(file.Name(), ".md") {
+				content, err := ioutil.ReadFile(filepath.Join(postsDir, file.Name()))
+				if err != nil {
+					continue
+				}
 
-			// Parse frontmatter and content
-			lines := strings.Split(string(content), "\n")
-			title := strings.TrimSpace(strings.Replace(file.Name(), ".md", "", 1))
-			var dateStr string
-			contentStart := 0
-			inFrontmatter := false
+				// Parse frontmatter and content using the frontmatter library
+				var matter PostMatter
+				rest, err := frontmatter.Parse(strings.NewReader(string(content)), &matter)
+				if err != nil {
+					// If frontmatter parsing fails, use defaults
+					matter.Title = strings.TrimSpace(strings.Replace(file.Name(), ".md", "", 1))
+					matter.Date = ""
+					rest = content
+				}
 
-			// Parse frontmatter
-			for i, line := range lines {
-				line = strings.TrimSpace(line)
-				if line == "---" {
-					if !inFrontmatter {
-						inFrontmatter = true
-						continue
+				// Use title from frontmatter or fallback to filename
+				title := matter.Title
+				if title == "" {
+					title = strings.TrimSpace(strings.Replace(file.Name(), ".md", "", 1))
+				}
+
+				// Parse date with flexible parsing
+				var postDate time.Time
+				if matter.Date != "" {
+					if parsedDate, err := dateparse.ParseAny(matter.Date); err == nil {
+						postDate = parsedDate
 					} else {
-						// End of frontmatter
-						contentStart = i + 1
-						break
+						// Fallback to file modification time
+						postDate = file.ModTime()
 					}
-				}
-				if inFrontmatter {
-					if strings.HasPrefix(line, "title:") {
-						title = strings.TrimSpace(strings.TrimPrefix(line, "title:"))
-					} else if strings.HasPrefix(line, "date:") {
-						dateStr = strings.TrimSpace(strings.TrimPrefix(line, "date:"))
-					}
-				}
-			}
-
-			// Parse date
-			var postDate time.Time
-			if dateStr != "" {
-				// Try to parse the date from frontmatter
-				if parsedDate, err := time.Parse("January 2, 2006", dateStr); err == nil {
-					postDate = parsedDate
 				} else {
-					// Fallback to file modification time
 					postDate = file.ModTime()
 				}
-			} else {
-				postDate = file.ModTime()
+
+				// Convert markdown to HTML using enhanced Goldmark
+				htmlContent := s.markdownToHTML(strings.TrimSpace(string(rest)))
+				postURL := strings.Replace(file.Name(), ".md", ".html", 1)
+
+				post := Post{
+					Title:    title,
+					Date:     postDate,
+					Content:  htmlContent,
+					Filename: file.Name(),
+					URL:      postURL,
+				}
+
+				s.Posts = append(s.Posts, post)
 			}
-
-			// Extract content and convert markdown to HTML
-			markdownContent := strings.Join(lines[contentStart:], "\n")
-			htmlContent := s.markdownToHTML(strings.TrimSpace(markdownContent))
-			postURL := strings.Replace(file.Name(), ".md", ".html", 1)
-
-			post := Post{
-				Title:    title,
-				Date:     postDate,
-				Content:  htmlContent,
-				Filename: file.Name(),
-				URL:      postURL,
-			}
-
-			s.Posts = append(s.Posts, post)
 		}
-	}
 
 	// Sort posts by date (newest first)
 	sort.Slice(s.Posts, func(i, j int) bool {
@@ -200,35 +204,23 @@ func (s *Site) loadPages() error {
 				continue
 			}
 
-			// Parse frontmatter and content (similar to posts)
-			lines := strings.Split(string(content), "\n")
-			title := strings.TrimSpace(strings.Replace(file.Name(), ".md", "", 1))
-			contentStart := 0
-			inFrontmatter := false
-
-			// Parse frontmatter
-			for i, line := range lines {
-				line = strings.TrimSpace(line)
-				if line == "---" {
-					if !inFrontmatter {
-						inFrontmatter = true
-						continue
-					} else {
-						// End of frontmatter
-						contentStart = i + 1
-						break
-					}
-				}
-				if inFrontmatter {
-					if strings.HasPrefix(line, "title:") {
-						title = strings.TrimSpace(strings.TrimPrefix(line, "title:"))
-					}
-				}
+			// Parse frontmatter and content using the frontmatter library
+			var matter PageMatter
+			rest, err := frontmatter.Parse(strings.NewReader(string(content)), &matter)
+			if err != nil {
+				// If frontmatter parsing fails, use defaults
+				matter.Title = strings.TrimSpace(strings.Replace(file.Name(), ".md", "", 1))
+				rest = content
 			}
 
-			// Extract content and convert markdown to HTML
-			markdownContent := strings.Join(lines[contentStart:], "\n")
-			htmlContent := s.markdownToHTML(strings.TrimSpace(markdownContent))
+			// Use title from frontmatter or fallback to filename
+			title := matter.Title
+			if title == "" {
+				title = strings.TrimSpace(strings.Replace(file.Name(), ".md", "", 1))
+			}
+
+			// Convert markdown to HTML using enhanced Goldmark
+			htmlContent := s.markdownToHTML(strings.TrimSpace(string(rest)))
 			pageURL := strings.Replace(file.Name(), ".md", ".html", 1)
 
 			page := Page{
@@ -547,14 +539,7 @@ func (s *Site) generateIndex() error {
 </body>
 </html>`
 
-	tmpl, err := template.New("index").Funcs(template.FuncMap{
-		"truncate": func(s string, length int) string {
-			if len(s) <= length {
-				return s
-			}
-			return s[:length] + "..."
-		},
-	}).Parse(indexTemplate)
+	tmpl, err := template.New("index").Funcs(sprig.FuncMap()).Parse(indexTemplate)
 	if err != nil {
 		return err
 	}
@@ -791,193 +776,32 @@ func (s *Site) generateRSS() error {
 	return tmpl.Execute(file, data)
 }
 
-// markdownToHTML converts basic markdown to HTML
+// markdownToHTML converts markdown to HTML using enhanced Goldmark with extensions
 func (s *Site) markdownToHTML(markdown string) string {
-	lines := strings.Split(markdown, "\n")
-	var html strings.Builder
-	inParagraph := false
-	inList := false
+	// Configure Goldmark with extensions
+	md := goldmark.New(
+		goldmark.WithExtensions(
+			extension.GFM,        // GitHub Flavored Markdown
+			extension.Table,      // Tables
+			extension.Strikethrough, // Strikethrough
+			extension.Linkify,    // Auto-linkify URLs
+			extension.TaskList,   // Task lists
+		),
+		goldmark.WithParserOptions(
+			parser.WithAutoHeadingID(), // Auto-generate heading IDs
+		),
+		goldmark.WithRendererOptions(
+			goldmarkhtml.WithHardWraps(),    // Hard line breaks
+			goldmarkhtml.WithXHTML(),        // XHTML output
+			goldmarkhtml.WithUnsafe(),       // Allow raw HTML
+		),
+	)
 
-	for i, line := range lines {
-		line = strings.TrimSpace(line)
-
-		// Handle empty lines
-		if line == "" {
-			if inParagraph {
-				html.WriteString("</p>\n")
-				inParagraph = false
-			}
-			if inList {
-				html.WriteString("</ul>\n")
-				inList = false
-			}
-			continue
-		}
-
-		// Handle headers
-		if strings.HasPrefix(line, "### ") {
-			if inParagraph {
-				html.WriteString("</p>\n")
-				inParagraph = false
-			}
-			if inList {
-				html.WriteString("</ul>\n")
-				inList = false
-			}
-			headerText := strings.TrimPrefix(line, "### ")
-			html.WriteString(fmt.Sprintf("<h3>%s</h3>\n", s.processInlineMarkdown(headerText)))
-		} else if strings.HasPrefix(line, "## ") {
-			if inParagraph {
-				html.WriteString("</p>\n")
-				inParagraph = false
-			}
-			if inList {
-				html.WriteString("</ul>\n")
-				inList = false
-			}
-			headerText := strings.TrimPrefix(line, "## ")
-			html.WriteString(fmt.Sprintf("<h2>%s</h2>\n", s.processInlineMarkdown(headerText)))
-		} else if strings.HasPrefix(line, "# ") {
-			if inParagraph {
-				html.WriteString("</p>\n")
-				inParagraph = false
-			}
-			if inList {
-				html.WriteString("</ul>\n")
-				inList = false
-			}
-			headerText := strings.TrimPrefix(line, "# ")
-			html.WriteString(fmt.Sprintf("<h1>%s</h1>\n", s.processInlineMarkdown(headerText)))
-		} else if strings.HasPrefix(line, "* ") || strings.HasPrefix(line, "- ") {
-			// Handle bullet lists
-			if inParagraph {
-				html.WriteString("</p>\n")
-				inParagraph = false
-			}
-			if !inList {
-				html.WriteString("<ul>\n")
-				inList = true
-			}
-			var listItemText string
-			if strings.HasPrefix(line, "* ") {
-				listItemText = strings.TrimPrefix(line, "* ")
-			} else {
-				listItemText = strings.TrimPrefix(line, "- ")
-			}
-			html.WriteString(fmt.Sprintf("<li>%s</li>\n", s.processInlineMarkdown(listItemText)))
-		} else {
-			// Close list if we're not in a list item anymore
-			if inList {
-				html.WriteString("</ul>\n")
-				inList = false
-			}
-
-			// Regular paragraph text
-			if !inParagraph {
-				html.WriteString("<p>")
-				inParagraph = true
-			}
-
-			// Process inline formatting
-			processedLine := s.processInlineMarkdown(line)
-			html.WriteString(processedLine)
-
-			// Add space if not the last line of content and next line is not empty and not a special element
-			nextLine := ""
-			if i < len(lines)-1 {
-				nextLine = strings.TrimSpace(lines[i+1])
-			}
-			if nextLine != "" && !strings.HasPrefix(nextLine, "#") && !strings.HasPrefix(nextLine, "*") && !strings.HasPrefix(nextLine, "-") {
-				html.WriteString(" ")
-			}
-		}
+	var buf bytes.Buffer
+	if err := md.Convert([]byte(markdown), &buf); err != nil {
+		// Fallback to plain text if conversion fails
+		return markdown
 	}
-
-	// Close any open tags
-	if inParagraph {
-		html.WriteString("</p>\n")
-	}
-	if inList {
-		html.WriteString("</ul>\n")
-	}
-
-	return html.String()
+	return buf.String()
 }
 
-// processInlineMarkdown handles basic bold and italic formatting
-func (s *Site) processInlineMarkdown(text string) string {
-	// Use simple replacement approach
-	// Process in order: __, **, _, *
-
-	// 1. Handle __ bold __ first
-	text = s.replaceMarkdown(text, "__", "<strong>", "</strong>")
-
-	// 2. Handle ** bold **
-	text = s.replaceMarkdown(text, "**", "<strong>", "</strong>")
-
-	// 3. Handle _ italic _ (only if not already processed as bold)
-	text = s.replaceMarkdownItalic(text, "_", "<em>", "</em>")
-
-	// 4. Handle * italic * (only if not already processed as bold)
-	text = s.replaceMarkdownItalic(text, "*", "<em>", "</em>")
-
-	return text
-}
-
-// replaceMarkdown replaces markdown syntax with HTML tags
-func (s *Site) replaceMarkdown(text, marker, openTag, closeTag string) string {
-	for {
-		first := strings.Index(text, marker)
-		if first == -1 {
-			break
-		}
-
-		second := strings.Index(text[first+len(marker):], marker)
-		if second == -1 {
-			break
-		}
-		second += first + len(marker)
-
-		content := text[first+len(marker) : second]
-		text = text[:first] + openTag + content + closeTag + text[second+len(marker):]
-	}
-	return text
-}
-
-// replaceMarkdownItalic replaces italic markdown but avoids already processed strong tags
-func (s *Site) replaceMarkdownItalic(text, marker, openTag, closeTag string) string {
-	for {
-		first := strings.Index(text, marker)
-		if first == -1 {
-			break
-		}
-
-		// Check if this marker is inside a <strong> tag
-		strongStart := strings.LastIndex(text[:first], "<strong>")
-		strongEnd := strings.LastIndex(text[:first], "</strong>")
-		if strongStart != -1 && (strongEnd == -1 || strongStart > strongEnd) {
-			// We're inside a strong tag, skip this marker
-			text = text[:first] + "TEMP_SKIP" + text[first+len(marker):]
-			continue
-		}
-
-		second := strings.Index(text[first+len(marker):], marker)
-		if second == -1 {
-			break
-		}
-		second += first + len(marker)
-
-		content := text[first+len(marker) : second]
-		// Don't process if content contains strong tags
-		if strings.Contains(content, "<strong>") || strings.Contains(content, "</strong>") {
-			text = text[:first] + "TEMP_SKIP" + text[first+len(marker):]
-			continue
-		}
-
-		text = text[:first] + openTag + content + closeTag + text[second+len(marker):]
-	}
-
-	// Restore skipped markers
-	text = strings.ReplaceAll(text, "TEMP_SKIP", marker)
-	return text
-}
