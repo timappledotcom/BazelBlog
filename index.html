@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BazelBlog - Fast & Simple Static Site Generator</title>
+    <meta name="description" content="A fast and simple static site generator with multi-site support, interactive UI, and beautiful themes">
+    <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMzIiIGhlaWdodD0iMzIiIHZpZXdCb3g9IjAgMCAzMiAzMiIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHJlY3Qgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIiByeD0iNCIgZmlsbD0iIzMzNzNkYyIvPgo8cGF0aCBkPSJNOCAxMGg4djJIOHYtMnptMCA0aDEydjJIOHYtMnptMCA0aDEwdjJIOHYtMnptMTQtOHY4bC0yIDJ2LTEwaDJ6IiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+        
+        header {
+            padding: 2rem 0;
+            text-align: center;
+            color: white;
+        }
+        
+        .logo {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .tagline {
+            font-size: 1.2rem;
+            opacity: 0.9;
+            margin-bottom: 2rem;
+        }
+        
+        .hero {
+            background: white;
+            border-radius: 20px;
+            padding: 3rem;
+            margin: 2rem 0;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+        }
+        
+        .hero h1 {
+            font-size: 2.5rem;
+            margin-bottom: 1rem;
+            color: #2c3e50;
+        }
+        
+        .hero p {
+            font-size: 1.1rem;
+            color: #666;
+            margin-bottom: 2rem;
+        }
+        
+        .download-section {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+        
+        .download-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 2rem;
+            text-align: center;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+        }
+        
+        .download-card:hover {
+            border-color: #667eea;
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(102, 126, 234, 0.2);
+        }
+        
+        .download-card h3 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+            font-size: 1.3rem;
+        }
+        
+        .download-btn {
+            display: inline-block;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: all 0.3s ease;
+            margin: 0.5rem;
+        }
+        
+        .download-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 2rem;
+            margin: 3rem 0;
+        }
+        
+        .feature {
+            background: white;
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+            transition: transform 0.3s ease;
+        }
+        
+        .feature:hover {
+            transform: translateY(-5px);
+        }
+        
+        .feature-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+        }
+        
+        .feature h3 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+        
+        .feature p {
+            color: #666;
+            line-height: 1.6;
+        }
+        
+        .quick-start {
+            background: #2c3e50;
+            color: white;
+            padding: 3rem;
+            border-radius: 20px;
+            margin: 3rem 0;
+        }
+        
+        .quick-start h2 {
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+        
+        .code-block {
+            background: #1a252f;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            font-family: 'Monaco', 'Consolas', monospace;
+            overflow-x: auto;
+        }
+        
+        .code-block code {
+            color: #7dd3fc;
+        }
+        
+        .links {
+            text-align: center;
+            margin: 2rem 0;
+        }
+        
+        .link-btn {
+            display: inline-block;
+            background: transparent;
+            color: #667eea;
+            border: 2px solid #667eea;
+            padding: 12px 30px;
+            border-radius: 25px;
+            text-decoration: none;
+            font-weight: bold;
+            margin: 0.5rem;
+            transition: all 0.3s ease;
+        }
+        
+        .link-btn:hover {
+            background: #667eea;
+            color: white;
+            transform: translateY(-2px);
+        }
+        
+        footer {
+            text-align: center;
+            padding: 2rem 0;
+            color: white;
+            opacity: 0.8;
+        }
+        
+        @media (max-width: 768px) {
+            .hero {
+                padding: 2rem;
+            }
+            
+            .hero h1 {
+                font-size: 2rem;
+            }
+            
+            .logo {
+                font-size: 2rem;
+            }
+            
+            .download-section {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="logo">🏗️ BazelBlog</div>
+            <div class="tagline">Fast & Simple Static Site Generator</div>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="hero">
+            <h1>Build Beautiful Static Sites with Ease</h1>
+            <p>BazelBlog is a fast and simple static site generator with multi-site support, interactive UI, and beautiful themes. Perfect for developers who want to create stunning websites without the complexity.</p>
+            
+            <div class="download-section">
+                <div class="download-card">
+                    <h3>🐧 Linux (DEB)</h3>
+                    <p>For Debian, Ubuntu, and derivatives</p>
+                    <a href="https://github.com/timappledotcom/BazelBlog/releases/download/v1.3.0/bazel-blog_1.3.0_amd64.deb" class="download-btn">Download DEB</a>
+                </div>
+                
+                <div class="download-card">
+                    <h3>🎩 Linux (RPM)</h3>
+                    <p>For RHEL, CentOS, Fedora, and derivatives</p>
+                    <a href="https://github.com/timappledotcom/BazelBlog/releases/download/v1.3.0/bazel-blog-1.3.0-1.x86_64.rpm" class="download-btn">Download RPM</a>
+                </div>
+            </div>
+        </section>
+
+        <section class="features">
+            <div class="feature">
+                <div class="feature-icon">🎨</div>
+                <h3>Interactive UI</h3>
+                <p>Bubbletea-powered interactive terminal interface makes site management a breeze</p>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">🌈</div>
+                <h3>Beautiful Themes</h3>
+                <p>Built-in themes including Pika Beach, Catppuccin, Dracula, Nord, Tokyo Night, and 3li7e</p>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">🚀</div>
+                <h3>Multi-Site Support</h3>
+                <p>Registry and selection system for managing multiple sites from one installation</p>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">🔄</div>
+                <h3>Auto-Rebuild</h3>
+                <p>Automatically rebuilds your site when themes or content changes</p>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">🌐</div>
+                <h3>Development Server</h3>
+                <p>Built-in live development server for testing your site locally</p>
+            </div>
+            
+            <div class="feature">
+                <div class="feature-icon">📝</div>
+                <h3>Markdown Support</h3>
+                <p>Write your posts and pages in Markdown with full feature support</p>
+            </div>
+        </section>
+
+        <section class="quick-start">
+            <h2>Quick Start</h2>
+            <p>After installation, get started with these simple commands:</p>
+            
+            <div class="code-block">
+                <code># Check version<br>
+                bazel --version<br><br>
+                
+                # Create a new site<br>
+                bazel new<br><br>
+                
+                # Add a new post<br>
+                bazel post<br><br>
+                
+                # Build your site<br>
+                bazel build<br><br>
+                
+                # Start development server<br>
+                bazel serve</code>
+            </div>
+        </section>
+
+        <section class="links">
+            <a href="https://github.com/timappledotcom/BazelBlog" class="link-btn">📖 Documentation</a>
+            <a href="https://github.com/timappledotcom/BazelBlog/releases" class="link-btn">📦 All Releases</a>
+            <a href="https://github.com/timappledotcom/BazelBlog/issues" class="link-btn">🐛 Report Issues</a>
+        </section>
+    </main>
+
+    <footer>
+        <div class="container">
+            <p>&copy; 2025 BazelBlog. Made with ❤️ using Go and Bubbletea.</p>
+        </div>
+    </footer>
+</body>
+</html>
