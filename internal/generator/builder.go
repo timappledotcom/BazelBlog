@@ -525,7 +525,7 @@ func (s *Site) generateIndex() error {
     
     <footer class="site-footer">
         <p>
-            Made with <strong>BazeBlog</strong>
+            Made with <strong>BazelBlog</strong>
             {{if .Config.Socials}}
             | Connect with us:
             {{range $platform, $url := .Config.Socials}}
@@ -590,7 +590,7 @@ func (s *Site) generatePosts() error {
     
     <footer class="site-footer">
         <p>
-            Made with <strong>BazeBlog</strong>
+            Made with <strong>BazelBlog</strong>
             {{if .Config.Socials}}
             | Connect with us:
             {{range $platform, $url := .Config.Socials}}
@@ -665,7 +665,7 @@ func (s *Site) generatePages() error {
     
     <footer class="site-footer">
         <p>
-            Made with <strong>BazeBlog</strong>
+            Made with <strong>BazelBlog</strong>
             {{if .Config.Socials}}
             | Connect with us:
             {{range $platform, $url := .Config.Socials}}

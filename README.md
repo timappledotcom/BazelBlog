@@ -13,7 +13,7 @@ A simple, fast static site generator written in Go with interactive configuratio
 - **Markdown Support**: Write posts in Markdown with frontmatter
 - **Clean HTML Pages**: Create custom pages with raw HTML
 - **Live Development Server**: Auto-reload server for development
-- **Automatic Footer**: BazeBlog attribution footer with social links on all pages
+- **Automatic Footer**: BazelBlog attribution footer with social links on all pages
 
 ## Installation
 

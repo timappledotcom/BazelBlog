@@ -16,4 +16,4 @@ Description: Bazel - Fast Static Site Generator with Multi-Site Support
  - Underscore-based filenames for new posts and pages
  - Site-wide management from anywhere on system
  - Clean, intuitive command-line interface
- - Automatic footer with BazeBlog attribution and social links
+ - Automatic footer with BazelBlog attribution and social links

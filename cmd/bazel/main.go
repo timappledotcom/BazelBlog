@@ -110,7 +110,7 @@ func printVersion() {
 	fmt.Println("• Auto-rebuild on theme changes")
 	fmt.Println("• Live development server")
 	fmt.Println("• Markdown post support")
-	fmt.Println("• Automatic footer with BazeBlog attribution and social links")
+fmt.Println("• Automatic footer with BazelBlog attribution and social links")
 }
 
 func printHelp() {

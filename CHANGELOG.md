@@ -5,8 +5,8 @@ All notable changes to Bazel Blog will be documented in this file.
 ## [1.3.0] - 2025-07-14
 
 ### Added
-- **Automatic Footer**: All generated pages now include a footer with BazeBlog attribution and social links
-- Footer displays "Made with **BazeBlog**" on every page
+- **Automatic Footer**: All generated pages now include a footer with BazelBlog attribution and social links
+- Footer displays "Made with **BazelBlog**" on every page
 - Social media links from site configuration are automatically included in footer
 - Footer styling is consistent with site themes and responsive design
 
