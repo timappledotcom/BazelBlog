@@ -1,0 +1,19 @@
+Package: bazel-blog
+Version: 1.3.0
+Section: web
+Priority: optional
+Architecture: amd64
+Maintainer: Tim <tim@example.com>
+Description: Bazel - Fast Static Site Generator with Multi-Site Support
+ Bazel is a fast and simple static site generator with Pika-inspired themes.
+ Features include:
+ - Multi-site registry and selection system
+ - Interactive Bubbletea-powered UI
+ - Built-in themes (Pika Beach, Catppuccin, Dracula, Nord, Tokyo Night)
+ - Live development server with auto-reload
+ - Enhanced markdown support with improved formatting
+ - Helix editor support in addition to vim, nvim, nano, emacs
+ - Underscore-based filenames for new posts and pages
+ - Site-wide management from anywhere on system
+ - Clean, intuitive command-line interface
+ - Automatic footer with BazeBlog attribution and social links
