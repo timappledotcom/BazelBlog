@@ -511,15 +511,25 @@ func (s *Site) generateIndex() error {
         <hr>
         
         {{if .Posts}}
-        <h2>{{(index .Posts 0).Date.Format "2006"}}</h2>
+        {{$currentYear := 0}}
+        {{range .Posts}}
+        {{$postYear := .Date.Year}}
+        {{if ne $postYear $currentYear}}
+        {{if ne $currentYear 0}}
+        </ul>
+        {{end}}
+        <h2>{{$postYear}}</h2>
         <ul class="site-list-of-posts">
-            {{range .Posts}}
+        {{$currentYear = $postYear}}
+        {{end}}
             <li>
                 <time>{{.Date.Format "2 Jan"}}</time>
                 <div class="post-link"><a href="{{.URL}}">{{.Title}}</a></div>
             </li>
-            {{end}}
+        {{end}}
+        {{if .Posts}}
         </ul>
+        {{end}}
         {{end}}
     </main>
     
