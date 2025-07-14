@@ -18,6 +18,9 @@ go.work
 /bazel
 bazel-blog
 
+# Debian package binary
+debian/usr/bin/bazel
+
 # Debian package files
 *.deb
 
