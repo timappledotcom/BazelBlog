@@ -113,9 +113,17 @@
         
         .features {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            grid-template-columns: repeat(4, 1fr);
             gap: 2rem;
             margin: 3rem 0;
+        }
+        
+        .feature:nth-child(5) {
+            grid-column: 1.5 / 2.5;
+        }
+        
+        .feature:nth-child(6) {
+            grid-column: 2.5 / 3.5;
         }
         
         .feature {
@@ -218,6 +226,15 @@
             
             .download-section {
                 grid-template-columns: 1fr;
+            }
+            
+            .features {
+                grid-template-columns: 1fr;
+            }
+            
+            .feature:nth-child(5),
+            .feature:nth-child(6) {
+                grid-column: 1;
             }
         }
     </style>
