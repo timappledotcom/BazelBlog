@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 
@@ -22,6 +23,14 @@ type SiteVersion struct {
 const CurrentVersion = "1.4.1"
 const VersionFile = ".bazel-version"
 
+// Upgrade represents a version upgrade step
+type Upgrade struct {
+	FromVersion string
+	ToVersion   string
+	Description string
+	Apply       func() error
+}
+
 // RunUpgrade checks for and applies any necessary upgrades to the current site
 func RunUpgrade() error {
 	fmt.Println("🔄 Bazel Site Upgrade")
@@ -35,7 +44,7 @@ func RunUpgrade() error {
 	// Load current site version
 	siteVersion, err := loadSiteVersion()
 	if err != nil {
-		fmt.Printf("⚠️  No version file found, assuming new site structure needed\n")
+		fmt.Printf("⚠️  No version file found, creating new version tracking\n")
 		siteVersion = &SiteVersion{
 			Version:     "0.0.0",
 			LastUpgrade: time.Time{},
@@ -43,10 +52,11 @@ func RunUpgrade() error {
 		}
 	}
 
-	fmt.Printf("📊 Current site version: %s\n", siteVersion.Version)
+	fmt.Printf("� Currenit site version: %s\n", siteVersion.Version)
 	fmt.Printf("📦 Bazel version: %s\n", CurrentVersion)
 
-	if siteVersion.Version == CurrentVersion {
+	// Check if already up to date
+	if compareVersions(siteVersion.Version, CurrentVersion) >= 0 {
 		fmt.Println("✅ Site is already up to date!")
 		return nil
 	}
@@ -54,6 +64,7 @@ func RunUpgrade() error {
 	fmt.Println("")
 	fmt.Println("🔍 Checking for upgrades...")
 
+	// Define all available upgrades
 	upgrades := []Upgrade{
 		{
 			FromVersion: "0.0.0",
@@ -93,9 +104,12 @@ func RunUpgrade() error {
 		},
 	}
 
+	// Apply upgrades sequentially
 	applied := false
+	currentVersion := siteVersion.Version
+
 	for _, upgrade := range upgrades {
-		if shouldApplyUpgrade(siteVersion.Version, upgrade) {
+		if shouldApplyUpgrade(currentVersion, upgrade) {
 			fmt.Printf("🔧 Applying upgrade: %s\n", upgrade.Description)
 			fmt.Printf("   %s → %s\n", upgrade.FromVersion, upgrade.ToVersion)
 
@@ -104,7 +118,7 @@ func RunUpgrade() error {
 				return fmt.Errorf("failed to apply upgrade %s: %w", upgrade.ToVersion, err)
 			}
 
-			siteVersion.Version = upgrade.ToVersion
+			currentVersion = upgrade.ToVersion
 			applied = true
 			fmt.Printf("✅ Upgrade to %s completed\n", upgrade.ToVersion)
 			fmt.Println("")
@@ -112,7 +126,8 @@ func RunUpgrade() error {
 	}
 
 	if applied {
-		// Update version file
+		// Update version file with final version
+		siteVersion.Version = currentVersion
 		siteVersion.LastUpgrade = time.Now()
 		err = saveSiteVersion(siteVersion)
 		if err != nil {
@@ -127,7 +142,7 @@ func RunUpgrade() error {
 		}
 
 		fmt.Println("🎉 Upgrade completed successfully!")
-		fmt.Printf("   Site updated to version %s\n", CurrentVersion)
+		fmt.Printf("   Site updated to version %s\n", currentVersion)
 	} else {
 		fmt.Println("ℹ️  No upgrades needed")
 	}
@@ -135,132 +150,114 @@ func RunUpgrade() error {
 	return nil
 }
 
-// Upgrade represents a version upgrade step
-type Upgrade struct {
-	FromVersion string
-	ToVersion   string
-	Description string
-	Apply       func() error
-}
-
 // shouldApplyUpgrade determines if an upgrade should be applied
 func shouldApplyUpgrade(currentVersion string, upgrade Upgrade) bool {
-	return versionCompare(currentVersion, upgrade.FromVersion) >= 0 &&
-		versionCompare(currentVersion, upgrade.ToVersion) < 0
+	// Current version must be >= FromVersion and < ToVersion
+	return compareVersions(currentVersion, upgrade.FromVersion) >= 0 &&
+		compareVersions(currentVersion, upgrade.ToVersion) < 0
 }
 
-// versionCompare compares two version strings (simple implementation)
-func versionCompare(v1, v2 string) int {
+// compareVersions compares two semantic version strings
+// Returns: -1 if v1 < v2, 0 if v1 == v2, 1 if v1 > v2
+func compareVersions(v1, v2 string) int {
 	if v1 == v2 {
 		return 0
 	}
-	if v1 == "0.0.0" {
+
+	// Handle special case for 0.0.0
+	if v1 == "0.0.0" && v2 != "0.0.0" {
 		return -1
 	}
-	if v2 == "0.0.0" {
+	if v2 == "0.0.0" && v1 != "0.0.0" {
 		return 1
 	}
-	if v1 < v2 {
-		return -1
+
+	// Parse version strings
+	parts1 := parseVersion(v1)
+	parts2 := parseVersion(v2)
+
+	// Compare each part (major, minor, patch)
+	for i := 0; i < 3; i++ {
+		if parts1[i] < parts2[i] {
+			return -1
+		}
+		if parts1[i] > parts2[i] {
+			return 1
+		}
 	}
-	return 1
+
+	return 0
 }
 
-// upgradeToV1_1_0 adds version tracking to existing sites
+// parseVersion parses a semantic version string into [major, minor, patch]
+func parseVersion(version string) [3]int {
+	parts := strings.Split(version, ".")
+	result := [3]int{0, 0, 0}
+
+	for i := 0; i < len(parts) && i < 3; i++ {
+		if num, err := strconv.Atoi(parts[i]); err == nil {
+			result[i] = num
+		}
+	}
+
+	return result
+}
+
+// Upgrade functions for each version
+
 func upgradeToV1_1_0() error {
 	fmt.Println("   • Adding version tracking")
-
-	// Create .bazel-version file if it doesn't exist
-	if _, err := os.Stat(VersionFile); os.IsNotExist(err) {
-		version := &SiteVersion{
-			Version:     "1.1.0",
-			LastUpgrade: time.Now(),
-			Features:    make(map[string]string),
-		}
-		return saveSiteVersion(version)
-	}
-
+	// Version tracking is handled by the upgrade system itself
 	return nil
 }
 
-// upgradeToV1_1_5 removes dark mode media query and updates CSS generation
 func upgradeToV1_1_5() error {
 	fmt.Println("   • Updating CSS generation (removing dark mode conflicts)")
-
-	// Check if public/style.css exists and has the problematic media query
-	cssPath := "public/style.css"
-	if _, err := os.Stat(cssPath); err == nil {
-		content, err := os.ReadFile(cssPath)
-		if err == nil && strings.Contains(string(content), "@media (prefers-color-scheme: dark)") {
-			fmt.Println("   • Found conflicting dark mode CSS - will be fixed on next build")
-		}
-	}
-
 	fmt.Println("   • Theme selection improvements applied")
+	// CSS will be regenerated on next build
 	return nil
 }
 
-// upgradeToV1_1_7 adds enhanced UI features and improved navigation spacing
 func upgradeToV1_1_7() error {
 	fmt.Println("   • Enhanced colorful menu interface")
 	fmt.Println("   • Added input field cursor indicators")
 	fmt.Println("   • Improved screen clearing for clean navigation")
-	fmt.Println("   • Updated navigation spacing (reduced gap between menu and content)")
-
-	// This upgrade primarily affects the UI/menu system, not site templates
-	// The changes are in the binary itself, so no file modifications needed
-	// Just ensure the site will be rebuilt with any updated CSS generation
-
+	fmt.Println("   • Updated navigation spacing")
+	// UI improvements are in the binary itself
 	return nil
 }
 
-// upgradeToV1_1_8 adds 3li7e theme and enhanced editing functionality
 func upgradeToV1_1_8() error {
 	fmt.Println("   • Added 3li7e retro CRT monitor theme (green-on-black)")
 	fmt.Println("   • Enhanced post and page editing functionality")
 	fmt.Println("   • Improved markdown page support")
-	fmt.Println("   • Updated about page template with new theme information")
-
-	// This upgrade primarily adds new theme support and editing features
-	// The changes are in the binary itself and templates, so no file modifications needed
-	// The site will be rebuilt with the updated theme options
-
+	// Theme and editing improvements are in the binary
 	return nil
 }
 
-// upgradeToV1_4_0 implements new markdown documentation upgrade
 func upgradeToV1_4_0() error {
-	fmt.Println("   • Added markdown documentation file for users")
+	fmt.Println("   • Added comprehensive markdown documentation")
 	fmt.Println("   • Improved user experience with new docs and guides")
-
-	// Add logic here related to version 1.4.0
-	// Normally, it would modify site templates, config, or files
-
-	fmt.Println("   • Ensure the site rebuild reflects the new version")
-
+	// Documentation improvements
 	return nil
 }
 
-// upgradeToV1_4_1 implements project cleanup and build system improvements
 func upgradeToV1_4_1() error {
 	fmt.Println("   • Project cleanup and build system improvements")
 	fmt.Println("   • Enhanced documentation structure")
 	fmt.Println("   • Improved build system with Makefile")
 	fmt.Println("   • Better developer experience and contribution workflow")
-
-	// This upgrade primarily affects the development workflow and project structure
-	// No site template changes needed, just ensure rebuild with latest version
-
+	// Build system and project structure improvements
 	return nil
 }
 
-// isInBazelSite checks if current directory is a bazel site
+// Utility functions
+
 func isInBazelSite() bool {
 	_, err := os.Stat("bazel.toml")
 	return err == nil
 }
 
-// loadSiteVersion loads the site version information
 func loadSiteVersion() (*SiteVersion, error) {
 	data, err := os.ReadFile(VersionFile)
 	if err != nil {
@@ -276,7 +273,6 @@ func loadSiteVersion() (*SiteVersion, error) {
 	return &version, nil
 }
 
-// saveSiteVersion saves the site version information
 func saveSiteVersion(version *SiteVersion) error {
 	data, err := json.MarshalIndent(version, "", "  ")
 	if err != nil {
@@ -328,7 +324,7 @@ func UpgradeConfig() error {
 	// Add any new configuration fields or update defaults
 	changed := false
 
-	// Example: Add new theme options if they don't exist
+	// Validate theme options
 	validSchemes := map[string]bool{
 		"pika-beach": true, "catppuccin-latte": true, "catppuccin-frappe": true,
 		"catppuccin-macchiato": true, "catppuccin-mocha": true, "dracula": true,
