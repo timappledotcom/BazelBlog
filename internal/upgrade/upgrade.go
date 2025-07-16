@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strconv"
 	"strings"
 	"time"
@@ -20,7 +21,7 @@ type SiteVersion struct {
 	Features     map[string]string `json:"features,omitempty"`
 }
 
-const CurrentVersion = "1.4.1"
+const CurrentVersion = "1.4.2"
 const VersionFile = ".bazel-version"
 
 // Upgrade represents a version upgrade step
@@ -101,6 +102,12 @@ func RunUpgrade() error {
 			ToVersion:   "1.4.1",
 			Description: "Project cleanup and build system improvements",
 			Apply:       upgradeToV1_4_1,
+		},
+		{
+			FromVersion: "1.4.1",
+			ToVersion:   "1.4.2",
+			Description: "Improved site structure with organized directories",
+			Apply:       upgradeToV1_4_2,
 		},
 	}
 
@@ -255,6 +262,141 @@ func upgradeToV1_4_1() error {
 	}
 
 	return nil
+}
+
+func upgradeToV1_4_2() error {
+	fmt.Println("   • Migrating to organized directory structure")
+	fmt.Println("   • Moving posts and pages to subdirectories")
+
+	// Migrate existing public directory structure
+	err := migrateDirectoryStructure()
+	if err != nil {
+		return fmt.Errorf("failed to migrate directory structure: %w", err)
+	}
+
+	fmt.Println("   • Site structure updated for better organization")
+	return nil
+}
+
+// migrateDirectoryStructure moves existing posts and pages to subdirectories
+func migrateDirectoryStructure() error {
+	publicDir := "public"
+
+	// Check if public directory exists
+	if _, err := os.Stat(publicDir); os.IsNotExist(err) {
+		// No public directory to migrate
+		return nil
+	}
+
+	// Create subdirectories if they don't exist
+	postsDir := filepath.Join(publicDir, "posts")
+	pagesDir := filepath.Join(publicDir, "pages")
+
+	if err := os.MkdirAll(postsDir, 0755); err != nil {
+		return fmt.Errorf("failed to create posts directory: %w", err)
+	}
+	if err := os.MkdirAll(pagesDir, 0755); err != nil {
+		return fmt.Errorf("failed to create pages directory: %w", err)
+	}
+
+	// Read all files in public directory
+	files, err := os.ReadDir(publicDir)
+	if err != nil {
+		return fmt.Errorf("failed to read public directory: %w", err)
+	}
+
+	movedCount := 0
+
+	for _, file := range files {
+		if file.IsDir() {
+			continue // Skip subdirectories
+		}
+
+		filename := file.Name()
+
+		// Skip core files that should stay in root
+		if filename == "index.html" || filename == "style.css" || filename == "feed.xml" {
+			continue
+		}
+
+		// Check if it's a post or page by looking at source directories
+		oldPath := filepath.Join(publicDir, filename)
+		var newPath string
+
+		// Determine if it's a post or page by checking source files
+		if isPostFile(filename) {
+			newPath = filepath.Join(postsDir, filename)
+			fmt.Printf("   • Moving post: %s → posts/%s\n", filename, filename)
+		} else if isPageFile(filename) {
+			newPath = filepath.Join(pagesDir, filename)
+			fmt.Printf("   • Moving page: %s → pages/%s\n", filename, filename)
+		} else {
+			// Unknown file type, leave it in root
+			continue
+		}
+
+		// Move the file
+		err = os.Rename(oldPath, newPath)
+		if err != nil {
+			fmt.Printf("   ⚠️  Warning: Failed to move %s: %v\n", filename, err)
+			continue
+		}
+
+		movedCount++
+	}
+
+	if movedCount > 0 {
+		fmt.Printf("   • Successfully migrated %d files to organized structure\n", movedCount)
+	} else {
+		fmt.Println("   • No files needed migration")
+	}
+
+	return nil
+}
+
+// isPostFile checks if a filename corresponds to a post
+func isPostFile(filename string) bool {
+	if !strings.HasSuffix(filename, ".html") {
+		return false
+	}
+
+	// Check if corresponding markdown file exists in posts directory
+	mdName := strings.Replace(filename, ".html", ".md", 1)
+	if _, err := os.Stat(filepath.Join("posts", mdName)); err == nil {
+		return true
+	}
+
+	// Fallback: check common post patterns
+	// This is a heuristic for files that might be posts
+	return true // Default to treating HTML files as posts unless proven otherwise
+}
+
+// isPageFile checks if a filename corresponds to a page
+func isPageFile(filename string) bool {
+	if !strings.HasSuffix(filename, ".html") {
+		return false
+	}
+
+	// Check if corresponding markdown file exists in pages directory
+	mdName := strings.Replace(filename, ".html", ".md", 1)
+	if _, err := os.Stat(filepath.Join("pages", mdName)); err == nil {
+		return true
+	}
+
+	// Check if HTML file exists in pages directory
+	if _, err := os.Stat(filepath.Join("pages", filename)); err == nil {
+		return true
+	}
+
+	// Common page names
+	pagenames := []string{"about.html", "contact.html", "projects.html", "resume.html"}
+	for _, pagename := range pagenames {
+		if filename == pagename {
+			return true
+		}
+	}
+
+	return false
 }
 
 // convertJSONConfigToTOML converts a JSON format bazel.toml to proper TOML format

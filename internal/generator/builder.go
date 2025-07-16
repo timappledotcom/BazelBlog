@@ -11,9 +11,9 @@ import (
 	"strings"
 	"time"
 
+	"github.com/Masterminds/sprig/v3"
 	"github.com/adrg/frontmatter"
 	"github.com/araddon/dateparse"
-	"github.com/Masterminds/sprig/v3"
 	"github.com/yourusername/bazel_blog/internal/config"
 	"github.com/yuin/goldmark"
 	"github.com/yuin/goldmark/extension"
@@ -60,13 +60,21 @@ func BuildSite() error {
 		return fmt.Errorf("failed to load config: %w", err)
 	}
 
-	// Create output directory
+	// Create output directory structure
 	outputDir := "public"
 	if err := os.RemoveAll(outputDir); err != nil {
 		return fmt.Errorf("failed to remove output directory: %w", err)
 	}
 	if err := os.MkdirAll(outputDir, 0755); err != nil {
 		return fmt.Errorf("failed to create output directory: %w", err)
+	}
+
+	// Create subdirectories
+	if err := os.MkdirAll(filepath.Join(outputDir, "posts"), 0755); err != nil {
+		return fmt.Errorf("failed to create posts directory: %w", err)
+	}
+	if err := os.MkdirAll(filepath.Join(outputDir, "pages"), 0755); err != nil {
+		return fmt.Errorf("failed to create pages directory: %w", err)
 	}
 
 	// Build site structure
@@ -125,57 +133,57 @@ func (s *Site) loadPosts() error {
 		return err
 	}
 
-		for _, file := range files {
-			if strings.HasSuffix(file.Name(), ".md") {
-				content, err := ioutil.ReadFile(filepath.Join(postsDir, file.Name()))
-				if err != nil {
-					continue
-				}
+	for _, file := range files {
+		if strings.HasSuffix(file.Name(), ".md") {
+			content, err := ioutil.ReadFile(filepath.Join(postsDir, file.Name()))
+			if err != nil {
+				continue
+			}
 
-				// Parse frontmatter and content using the frontmatter library
-				var matter PostMatter
-				rest, err := frontmatter.Parse(strings.NewReader(string(content)), &matter)
-				if err != nil {
-					// If frontmatter parsing fails, use defaults
-					matter.Title = strings.TrimSpace(strings.Replace(file.Name(), ".md", "", 1))
-					matter.Date = ""
-					rest = content
-				}
+			// Parse frontmatter and content using the frontmatter library
+			var matter PostMatter
+			rest, err := frontmatter.Parse(strings.NewReader(string(content)), &matter)
+			if err != nil {
+				// If frontmatter parsing fails, use defaults
+				matter.Title = strings.TrimSpace(strings.Replace(file.Name(), ".md", "", 1))
+				matter.Date = ""
+				rest = content
+			}
 
-				// Use title from frontmatter or fallback to filename
-				title := matter.Title
-				if title == "" {
-					title = strings.TrimSpace(strings.Replace(file.Name(), ".md", "", 1))
-				}
+			// Use title from frontmatter or fallback to filename
+			title := matter.Title
+			if title == "" {
+				title = strings.TrimSpace(strings.Replace(file.Name(), ".md", "", 1))
+			}
 
-				// Parse date with flexible parsing
-				var postDate time.Time
-				if matter.Date != "" {
-					if parsedDate, err := dateparse.ParseAny(matter.Date); err == nil {
-						postDate = parsedDate
-					} else {
-						// Fallback to file modification time
-						postDate = file.ModTime()
-					}
+			// Parse date with flexible parsing
+			var postDate time.Time
+			if matter.Date != "" {
+				if parsedDate, err := dateparse.ParseAny(matter.Date); err == nil {
+					postDate = parsedDate
 				} else {
+					// Fallback to file modification time
 					postDate = file.ModTime()
 				}
-
-				// Convert markdown to HTML using enhanced Goldmark
-				htmlContent := s.markdownToHTML(strings.TrimSpace(string(rest)))
-				postURL := strings.Replace(file.Name(), ".md", ".html", 1)
-
-				post := Post{
-					Title:    title,
-					Date:     postDate,
-					Content:  htmlContent,
-					Filename: file.Name(),
-					URL:      postURL,
-				}
-
-				s.Posts = append(s.Posts, post)
+			} else {
+				postDate = file.ModTime()
 			}
+
+			// Convert markdown to HTML using enhanced Goldmark
+			htmlContent := s.markdownToHTML(strings.TrimSpace(string(rest)))
+			postURL := "posts/" + strings.Replace(file.Name(), ".md", ".html", 1)
+
+			post := Post{
+				Title:    title,
+				Date:     postDate,
+				Content:  htmlContent,
+				Filename: file.Name(),
+				URL:      postURL,
+			}
+
+			s.Posts = append(s.Posts, post)
 		}
+	}
 
 	// Sort posts by date (newest first)
 	sort.Slice(s.Posts, func(i, j int) bool {
@@ -221,7 +229,7 @@ func (s *Site) loadPages() error {
 
 			// Convert markdown to HTML using enhanced Goldmark
 			htmlContent := s.markdownToHTML(strings.TrimSpace(string(rest)))
-			pageURL := strings.Replace(file.Name(), ".md", ".html", 1)
+			pageURL := "pages/" + strings.Replace(file.Name(), ".md", ".html", 1)
 
 			page := Page{
 				Title:    title,
@@ -240,7 +248,7 @@ func (s *Site) loadPages() error {
 			}
 
 			title := strings.TrimSpace(strings.Replace(file.Name(), ".html", "", 1))
-			pageURL := file.Name()
+			pageURL := "pages/" + file.Name()
 
 			page := Page{
 				Title:    title,
@@ -499,9 +507,9 @@ func (s *Site) generateIndex() error {
             <p>{{.Config.Description}}</p>
         </div>
         {{end}}
-        
+
         <hr>
-        
+
         {{if .Posts}}
         {{$currentYear := 0}}
         {{range .Posts}}
@@ -524,7 +532,7 @@ func (s *Site) generateIndex() error {
         {{end}}
         {{end}}
     </main>
-    
+
     <footer class="site-footer">
         <p>
             Made with <strong>BazelBlog</strong>
@@ -560,16 +568,16 @@ func (s *Site) generatePosts() error {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{.Title}} - {{.Config.Title}}</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../style.css">
 </head>
 <body class="site-view">
     <header class="site-header">
         <div>
-            <h2><a href="/">{{.Config.Title}}</a></h2>
+            <h2><a href="../">{{.Config.Title}}</a></h2>
             <nav class="site-nav">
-                <a href="/">Home</a>
+                <a href="../">Home</a>
                 {{range .Pages}}
-                <a href="{{.URL}}">{{.Title}}</a>
+                <a href="../{{.URL}}">{{.Title}}</a>
                 {{end}}
             </nav>
         </div>
@@ -582,7 +590,7 @@ func (s *Site) generatePosts() error {
             {{.Content}}
         </div>
     </main>
-    
+
     <footer class="site-footer">
         <p>
             Made with <strong>BazelBlog</strong>
@@ -639,16 +647,16 @@ func (s *Site) generatePages() error {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{.Title}} - {{.Config.Title}}</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="../style.css">
 </head>
 <body class="site-view">
     <header class="site-header">
         <div>
-            <h2><a href="/">{{.Config.Title}}</a></h2>
+            <h2><a href="../">{{.Config.Title}}</a></h2>
             <nav class="site-nav">
-                <a href="/">Home</a>
+                <a href="../">Home</a>
                 {{range .Pages}}
-                <a href="{{.URL}}">{{.Title}}</a>
+                <a href="../{{.URL}}">{{.Title}}</a>
                 {{end}}
             </nav>
         </div>
@@ -657,7 +665,7 @@ func (s *Site) generatePages() error {
     <main class="site-main">
         {{.Content}}
     </main>
-    
+
     <footer class="site-footer">
         <p>
             Made with <strong>BazelBlog</strong>
@@ -781,19 +789,19 @@ func (s *Site) markdownToHTML(markdown string) string {
 	// Configure Goldmark with extensions
 	md := goldmark.New(
 		goldmark.WithExtensions(
-			extension.GFM,        // GitHub Flavored Markdown
-			extension.Table,      // Tables
+			extension.GFM,           // GitHub Flavored Markdown
+			extension.Table,         // Tables
 			extension.Strikethrough, // Strikethrough
-			extension.Linkify,    // Auto-linkify URLs
-			extension.TaskList,   // Task lists
+			extension.Linkify,       // Auto-linkify URLs
+			extension.TaskList,      // Task lists
 		),
 		goldmark.WithParserOptions(
 			parser.WithAutoHeadingID(), // Auto-generate heading IDs
 		),
 		goldmark.WithRendererOptions(
-			goldmarkhtml.WithHardWraps(),    // Hard line breaks
-			goldmarkhtml.WithXHTML(),        // XHTML output
-			goldmarkhtml.WithUnsafe(),       // Allow raw HTML
+			goldmarkhtml.WithHardWraps(), // Hard line breaks
+			goldmarkhtml.WithXHTML(),     // XHTML output
+			goldmarkhtml.WithUnsafe(),    // Allow raw HTML
 		),
 	)
 
@@ -804,4 +812,3 @@ func (s *Site) markdownToHTML(markdown string) string {
 	}
 	return buf.String()
 }
-

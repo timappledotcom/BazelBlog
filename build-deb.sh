@@ -5,4 +5,4 @@ echo "Building Debian package using Makefile..."
 make deb
 
 echo "Package built successfully!"
-echo "Install with: sudo dpkg -i bazel-blog_1.4.1_amd64.deb"
+echo "Install with: sudo dpkg -i bazel-blog_1.4.2_amd64.deb"

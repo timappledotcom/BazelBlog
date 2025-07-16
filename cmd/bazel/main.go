@@ -11,7 +11,7 @@ import (
 	"github.com/yourusername/bazel_blog/internal/upgrade"
 )
 
-const Version = "1.4.1"
+const Version = "1.4.2"
 
 func main() {
 	if len(os.Args) < 2 {
@@ -110,7 +110,7 @@ func printVersion() {
 	fmt.Println("• Auto-rebuild on theme changes")
 	fmt.Println("• Live development server")
 	fmt.Println("• Markdown post support")
-fmt.Println("• Automatic footer with BazelBlog attribution and social links")
+	fmt.Println("• Automatic footer with BazelBlog attribution and social links")
 }
 
 func printHelp() {
