@@ -60,7 +60,7 @@ date: January 1, 2025
 Your content here with **markdown** support!
 ```
 
-For a complete guide to markdown syntax and commands, see [MARKDOWN.md](MARKDOWN.md).
+For a complete guide to markdown syntax and commands, see [MARKDOWN.md](docs/MARKDOWN.md).
 
 #### Pages (HTML)
 ```bash
@@ -168,12 +168,17 @@ bazel_blog/
 │   ├── registry/       # Site registry management
 │   ├── ui/             # Bubble Tea interactive interface
 │   └── upgrade/        # Site upgrade functionality
+├── docs/               # Documentation
+│   ├── CHANGELOG.md    # Version history
+│   ├── INSTALL.md      # Installation guide
+│   └── MARKDOWN.md     # Markdown syntax guide
 ├── debian/             # Debian package structure
+├── rpmbuild/           # RPM package structure
 ├── build-deb.sh        # Debian package build script
+├── build-rpm.sh        # RPM package build script
 ├── demo.sh             # Demo script
 ├── go.mod              # Go module file
 ├── go.sum              # Go module checksums
-├── INSTALL.md          # Installation instructions
 └── README.md           # This file
 ```
 
@@ -183,4 +188,11 @@ MIT License - feel free to use and modify as needed!
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit issues and pull requests.
+Contributions are welcome! Please read our [Contributing Guide](CONTRIBUTING.md) for details on:
+
+- Development setup and workflow
+- Coding standards and best practices
+- Testing and documentation requirements
+- Release process
+
+Feel free to submit issues and pull requests!

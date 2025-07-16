@@ -14,19 +14,25 @@
 # Go workspace file
 go.work
 
-# Built binary (in root directory)
+# Built binaries
 /bazel
 bazel-blog
+bazel-*
+
+# Package files
+*.deb
+*.rpm
 
 # Debian package binary
 debian/usr/bin/bazel
 
-# Debian package files
-*.deb
-
 # Build artifacts
 dist/
 build/
+rpmbuild/BUILD/
+rpmbuild/BUILDROOT/
+rpmbuild/RPMS/
+rpmbuild/SRPMS/
 
 # IDE and editor files
 .vscode/

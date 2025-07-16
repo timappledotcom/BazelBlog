@@ -4,11 +4,16 @@ echo "🏗️  Bazel Static Site Generator Demo"
 echo "======================================"
 echo ""
 
+# Build the binary first
+echo "Building Bazel..."
+make build
+cp build/bazel ./bazel
+
 # Clean up previous demo
 rm -rf demo-site
 
 echo "1. Creating a new site..."
-./bazel new demo-site
+./bazel new site demo-site
 
 echo ""
 echo "2. Navigating to the site directory..."
@@ -87,3 +92,8 @@ echo "   - Configure social media links"
 echo "   - Build the site"
 echo ""
 echo "Demo complete! 🎉"
+echo ""
+echo "Cleaning up demo files..."
+cd ..
+rm -rf demo-site
+rm -f bazel
