@@ -144,16 +144,18 @@ func (s *Site) loadPosts() error {
 			var matter PostMatter
 			rest, err := frontmatter.Parse(strings.NewReader(string(content)), &matter)
 			if err != nil {
-				// If frontmatter parsing fails, use defaults
-				matter.Title = strings.TrimSpace(strings.Replace(file.Name(), ".md", "", 1))
+				// If frontmatter parsing fails, use defaults and clean filename
+				cleanTitle := strings.TrimSpace(strings.ReplaceAll(file.Name(), "_", " "))
+				matter.Title = strings.TrimSuffix(cleanTitle, ".md")
 				matter.Date = ""
 				rest = content
 			}
 
-			// Use title from frontmatter or fallback to filename
+			// Use title from frontmatter or fallback to cleaned filename
 			title := matter.Title
 			if title == "" {
-				title = strings.TrimSpace(strings.Replace(file.Name(), ".md", "", 1))
+				cleanTitle := strings.TrimSpace(strings.ReplaceAll(file.Name(), "_", " "))
+				title = strings.TrimSuffix(cleanTitle, ".md")
 			}
 
 			// Parse date with flexible parsing
@@ -216,15 +218,17 @@ func (s *Site) loadPages() error {
 			var matter PageMatter
 			rest, err := frontmatter.Parse(strings.NewReader(string(content)), &matter)
 			if err != nil {
-				// If frontmatter parsing fails, use defaults
-				matter.Title = strings.TrimSpace(strings.Replace(file.Name(), ".md", "", 1))
+				// If frontmatter parsing fails, use defaults and clean filename
+				cleanTitle := strings.TrimSpace(strings.ReplaceAll(file.Name(), "_", " "))
+				matter.Title = strings.TrimSuffix(cleanTitle, ".md")
 				rest = content
 			}
 
-			// Use title from frontmatter or fallback to filename
+			// Use title from frontmatter or fallback to cleaned filename
 			title := matter.Title
 			if title == "" {
-				title = strings.TrimSpace(strings.Replace(file.Name(), ".md", "", 1))
+				cleanTitle := strings.TrimSpace(strings.ReplaceAll(file.Name(), "_", " "))
+				title = strings.TrimSuffix(cleanTitle, ".md")
 			}
 
 			// Convert markdown to HTML using enhanced Goldmark
@@ -486,6 +490,24 @@ func (s *Site) generateIndex() error {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{.Config.Title}}</title>
+    <meta name="description" content="{{.Config.Description}}">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{.Config.BaseURL}}">
+    <meta property="og:title" content="{{.Config.Title}}">
+    <meta property="og:description" content="{{.Config.Description}}">
+    <meta property="og:site_name" content="{{.Config.Title}}">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="{{.Config.BaseURL}}">
+    <meta property="twitter:title" content="{{.Config.Title}}">
+    <meta property="twitter:description" content="{{.Config.Description}}">
+
+    <!-- Additional SEO -->
+    <link rel="canonical" href="{{.Config.BaseURL}}">
+
     <link rel="stylesheet" href="style.css">
     <link rel="alternate" type="application/rss+xml" title="RSS Feed" href="feed.xml">
 </head>
@@ -568,6 +590,26 @@ func (s *Site) generatePosts() error {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{.Title}} - {{.Config.Title}}</title>
+    <meta name="description" content="{{.Title}} - {{.Config.Description}}">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="article">
+    <meta property="og:url" content="{{.Config.BaseURL}}/{{.URL}}">
+    <meta property="og:title" content="{{.Title}}">
+    <meta property="og:description" content="{{.Title}} - {{.Config.Description}}">
+    <meta property="og:site_name" content="{{.Config.Title}}">
+    <meta property="article:published_time" content="{{.Date.Format "2006-01-02T15:04:05Z07:00"}}">
+    <meta property="article:author" content="{{.Config.Title}}">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="{{.Config.BaseURL}}/{{.URL}}">
+    <meta property="twitter:title" content="{{.Title}}">
+    <meta property="twitter:description" content="{{.Title}} - {{.Config.Description}}">
+
+    <!-- Additional SEO -->
+    <link rel="canonical" href="{{.Config.BaseURL}}/{{.URL}}">
+
     <link rel="stylesheet" href="../style.css">
 </head>
 <body class="site-view">
@@ -620,12 +662,14 @@ func (s *Site) generatePosts() error {
 			Title   string
 			Date    time.Time
 			Content template.HTML
+			URL     string
 			Config  *config.Config
 			Pages   []Page
 		}{
 			Title:   post.Title,
 			Date:    post.Date,
 			Content: template.HTML(post.Content),
+			URL:     post.URL,
 			Config:  s.Config,
 			Pages:   s.Pages,
 		}
@@ -647,6 +691,24 @@ func (s *Site) generatePages() error {
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>{{.Title}} - {{.Config.Title}}</title>
+    <meta name="description" content="{{.Title}} - {{.Config.Description}}">
+
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{.Config.BaseURL}}/{{.URL}}">
+    <meta property="og:title" content="{{.Title}}">
+    <meta property="og:description" content="{{.Title}} - {{.Config.Description}}">
+    <meta property="og:site_name" content="{{.Config.Title}}">
+
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image">
+    <meta property="twitter:url" content="{{.Config.BaseURL}}/{{.URL}}">
+    <meta property="twitter:title" content="{{.Title}}">
+    <meta property="twitter:description" content="{{.Title}} - {{.Config.Description}}">
+
+    <!-- Additional SEO -->
+    <link rel="canonical" href="{{.Config.BaseURL}}/{{.URL}}">
+
     <link rel="stylesheet" href="../style.css">
 </head>
 <body class="site-view">
@@ -720,11 +782,13 @@ func (s *Site) generatePages() error {
 		data := struct {
 			Title   string
 			Content template.HTML
+			URL     string
 			Config  *config.Config
 			Pages   []Page
 		}{
 			Title:   page.Title,
 			Content: pageContent,
+			URL:     page.URL,
 			Config:  s.Config,
 			Pages:   s.Pages,
 		}
