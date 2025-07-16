@@ -51,72 +51,120 @@ font = "pika-serif"
 		return fmt.Errorf("failed to write to config file: %w", err)
 	}
 
-	// Create default about page with Bazel information
-	aboutPath := filepath.Join(name, "pages", "about.html")
+	// Create default about page with Bazel information (as Markdown)
+	aboutPath := filepath.Join(name, "pages", "about.md")
 	aboutFile, err := os.Create(aboutPath)
 	if err != nil {
 		return fmt.Errorf("failed to create about page: %w", err)
 	}
 	defer aboutFile.Close()
 
-	aboutContent := `<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>About</title>
-</head>
-<body>
-    <h1>About Bazel</h1>
-    <p>Welcome to your new static site generated with <strong>Bazel</strong>, a fast and simple static site generator.</p>
+	aboutContent := `---
+title: About Bazel
+date: ` + time.Now().Format("January 2, 2006") + `
+---
 
-    <h2>Getting Started</h2>
-    <p>Your site is now set up and ready to use. Here's how to get started:</p>
+# About Bazel
 
-    <h3>Creating Posts</h3>
-    <p>To create a new blog post, run:</p>
-    <pre><code>bazel new post "Your Post Title"</code></pre>
-    <p>This will create a new Markdown file in the <code>posts/</code> directory and open it in your default editor.</p>
+Welcome to your new static site generated with **Bazel**, a fast and simple static site generator.
 
-    <h3>Creating Pages</h3>
-    <p>To create a new static page, run:</p>
-    <pre><code>bazel new page "Your Page Title"</code></pre>
-    <p>This will create a new HTML file in the <code>pages/</code> directory.</p>
+## Getting Started
 
-    <h3>Building Your Site</h3>
-    <p>To build your site for production, run:</p>
-    <pre><code>bazel build</code></pre>
-    <p>This will generate all HTML files and assets in the <code>public/</code> directory.</p>
+Your site is now set up and ready to use. Here's how to get started:
 
-    <h3>Development Server</h3>
-    <p>To preview your site locally while developing, run:</p>
-    <pre><code>bazel serve</code></pre>
-    <p>This will start a local server at <code>http://localhost:3000</code> where you can preview your site.</p>
+### Creating Posts
 
-    <h3>Configuration</h3>
-    <p>You can customize your site by editing the <code>bazel.toml</code> file in your site's root directory. This includes:</p>
-    <ul>
-        <li><strong>Site title and description</strong></li>
-        <li><strong>Theme colors and fonts</strong></li>
-        <li><strong>Base URL for deployment</strong></li>
-        <li><strong>Social media links</strong></li>
-    </ul>
+To create a new blog post, run:
 
-    <h3>Themes</h3>
-    <p>Bazel comes with built-in themes including:</p>
-    <ul>
-        <li><code>pika-beach</code> - A warm, beach-inspired theme (default)</li>
-        <li><code>catppuccin-latte</code> - A light, elegant theme</li>
-        <li><code>catppuccin-mocha</code> - A dark, modern theme</li>
-        <li><code>3li7e</code> - A retro green-on-black CRT monitor theme</li>
-    </ul>
+` + "```bash" + `
+bazel post
+` + "```" + `
 
-    <p>Change the theme in your <code>bazel.toml</code> configuration file.</p>
+This will open an interactive menu for creating and managing posts in Markdown format.
 
-    <h2>Next Steps</h2>
-    <p>Start by creating your first post or customizing this about page. Happy blogging!</p>
-</body>
-</html>`
+### Creating Pages
+
+To create a new static page, run:
+
+` + "```bash" + `
+bazel page
+` + "```" + `
+
+This will open an interactive menu for creating and managing pages in Markdown format.
+
+### Building Your Site
+
+To build your site for production, run:
+
+` + "```bash" + `
+bazel build
+` + "```" + `
+
+This will generate all HTML files and assets in the ` + "`public/`" + ` directory with organized structure:
+
+- ` + "`public/posts/`" + ` - Blog posts
+- ` + "`public/pages/`" + ` - Static pages
+- ` + "`public/`" + ` - Homepage, CSS, and RSS feed
+
+### Development Server
+
+To preview your site locally while developing, run:
+
+` + "```bash" + `
+bazel serve
+` + "```" + `
+
+This will start a local server at ` + "`http://localhost:3000`" + ` where you can preview your site.
+
+### Configuration
+
+You can customize your site by editing the ` + "`bazel.toml`" + ` file in your site's root directory. This includes:
+
+- **Site title and description**
+- **Theme colors and fonts**
+- **Base URL for deployment**
+- **Social media links**
+
+### Themes
+
+Bazel comes with built-in themes including:
+
+- ` + "`pika-beach`" + ` - A warm, beach-inspired theme (default)
+- ` + "`catppuccin-latte`" + ` - A light, elegant theme
+- ` + "`catppuccin-mocha`" + ` - A dark, modern theme
+- ` + "`3li7e`" + ` - A retro green-on-black CRT monitor theme
+
+Change the theme using the interactive configuration menu or by editing ` + "`bazel.toml`" + `.
+
+## Content Format
+
+Both posts and pages are written in **Markdown** with frontmatter:
+
+` + "```markdown" + `
+---
+title: Your Page Title
+date: January 1, 2025
+---
+
+# Your Content Here
+
+Write your content in Markdown format with full support for:
+
+- **Bold** and *italic* text
+- [Links](https://example.com)
+- Lists and tables
+- Code blocks
+- And much more!
+` + "```" + `
+
+## Next Steps
+
+1. **Customize this about page** by editing ` + "`pages/about.md`" + `
+2. **Create your first post** with ` + "`bazel post`" + `
+3. **Configure your site** with ` + "`bazel config`" + `
+4. **Build and deploy** with ` + "`bazel build`" + `
+
+Happy blogging! 🎉`
 
 	_, err = aboutFile.WriteString(aboutContent)
 	if err != nil {
