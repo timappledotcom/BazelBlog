@@ -19,7 +19,7 @@ type SiteVersion struct {
 	Features     map[string]string `json:"features,omitempty"`
 }
 
-const CurrentVersion = "1.4.0"
+const CurrentVersion = "1.4.1"
 const VersionFile = ".bazel-version"
 
 // RunUpgrade checks for and applies any necessary upgrades to the current site
@@ -84,6 +84,12 @@ func RunUpgrade() error {
 			ToVersion:   "1.4.0",
 			Description: "Added comprehensive markdown documentation and improved user experience",
 			Apply:       upgradeToV1_4_0,
+		},
+		{
+			FromVersion: "1.4.0",
+			ToVersion:   "1.4.1",
+			Description: "Project cleanup and build system improvements",
+			Apply:       upgradeToV1_4_1,
 		},
 	}
 
@@ -231,6 +237,19 @@ func upgradeToV1_4_0() error {
 	// Normally, it would modify site templates, config, or files
 
 	fmt.Println("   • Ensure the site rebuild reflects the new version")
+
+	return nil
+}
+
+// upgradeToV1_4_1 implements project cleanup and build system improvements
+func upgradeToV1_4_1() error {
+	fmt.Println("   • Project cleanup and build system improvements")
+	fmt.Println("   • Enhanced documentation structure")
+	fmt.Println("   • Improved build system with Makefile")
+	fmt.Println("   • Better developer experience and contribution workflow")
+
+	// This upgrade primarily affects the development workflow and project structure
+	// No site template changes needed, just ensure rebuild with latest version
 
 	return nil
 }
