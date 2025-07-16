@@ -7,23 +7,31 @@ All notable changes to Bazel Blog will be documented in this file.
 ### Added
 - **Organized Directory Structure**: Posts and pages now generate in proper subdirectories
 - **Automatic Migration**: Upgrade system migrates existing flat structure to organized directories
+- **Social Media Optimization**: Comprehensive Open Graph and Twitter Card meta tags
+- **SEO Enhancement**: Canonical URLs, proper meta descriptions, and article metadata
 - **Better Site Organization**: Clear separation between posts/, pages/, and root files
 
 ### Changed
 - **Site Structure**: Generated sites now use `public/posts/` and `public/pages/` directories
 - **Template Paths**: Updated CSS and navigation links to work with new directory structure
 - **URL Structure**: Posts now accessible at `/posts/filename.html`, pages at `/pages/filename.html`
+- **Title Processing**: Underscores in filenames now convert to spaces in titles
 
 ### Fixed
+- **Post Title Display**: Filenames with underscores now show as proper spaced titles
+- **Frontmatter Stripping**: YAML frontmatter no longer appears in post content
 - **Directory Organization**: No more flat file structure in public directory
 - **Navigation Links**: Proper relative paths for subdirectory navigation
 - **CSS Loading**: Correct relative paths for stylesheets in subdirectories
+- **Template Data**: Fixed URL field access in post and page templates
 
 ### Technical Details
 - Enhanced builder.go to create proper directory structure
 - Updated templates with relative paths for subdirectories
 - Added migration logic in upgrade system for existing sites
 - Improved file organization for better deployment and SEO
+- Fixed frontmatter parsing to properly separate content from metadata
+- Added comprehensive social media meta tags for better sharing
 
 ## [1.4.1] - 2025-07-15
 
