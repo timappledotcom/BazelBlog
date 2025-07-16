@@ -20,6 +20,7 @@ All notable changes to Bazel Blog will be documented in this file.
 ### Fixed
 - **Post Title Display**: Filenames with underscores now show as proper spaced titles
 - **Frontmatter Stripping**: YAML frontmatter no longer appears in post content
+- **Page Format**: Default about page now created as Markdown (.md) instead of HTML for easier editing
 - **Directory Organization**: No more flat file structure in public directory
 - **Navigation Links**: Proper relative paths for subdirectory navigation
 - **CSS Loading**: Correct relative paths for stylesheets in subdirectories
