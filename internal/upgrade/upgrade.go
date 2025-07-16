@@ -247,7 +247,88 @@ func upgradeToV1_4_1() error {
 	fmt.Println("   • Enhanced documentation structure")
 	fmt.Println("   • Improved build system with Makefile")
 	fmt.Println("   • Better developer experience and contribution workflow")
-	// Build system and project structure improvements
+
+	// Convert JSON config to TOML if needed
+	err := convertJSONConfigToTOML()
+	if err != nil {
+		return fmt.Errorf("failed to convert config format: %w", err)
+	}
+
+	return nil
+}
+
+// convertJSONConfigToTOML converts a JSON format bazel.toml to proper TOML format
+func convertJSONConfigToTOML() error {
+	configPath := "bazel.toml"
+
+	// Read the current config file
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		return nil // No config file to convert
+	}
+
+	// Check if it's JSON format (starts with '{')
+	content := strings.TrimSpace(string(data))
+	if !strings.HasPrefix(content, "{") {
+		// Already in TOML format
+		return nil
+	}
+
+	fmt.Println("   • Converting JSON config to TOML format")
+
+	// Create backup first
+	backupPath := fmt.Sprintf("bazel.toml.json-backup.%s", time.Now().Format("20060102-150405"))
+	err = os.WriteFile(backupPath, data, 0644)
+	if err != nil {
+		return fmt.Errorf("failed to create backup: %w", err)
+	}
+	fmt.Printf("   • JSON config backed up to %s\n", backupPath)
+
+	// Parse JSON config
+	var jsonConfig struct {
+		SiteName    string `json:"site_name"`
+		Title       string `json:"title"`
+		Description string `json:"description"`
+		BaseURL     string `json:"base_url"`
+		Theme       struct {
+			ColorScheme string `json:"color_scheme"`
+			Font        string `json:"font"`
+		} `json:"theme"`
+		Socials map[string]string `json:"socials"`
+		Editor  string            `json:"editor"`
+	}
+
+	err = json.Unmarshal(data, &jsonConfig)
+	if err != nil {
+		return fmt.Errorf("failed to parse JSON config: %w", err)
+	}
+
+	// Create new config struct
+	cfg := &config.Config{
+		SiteName:    jsonConfig.SiteName,
+		Title:       jsonConfig.Title,
+		Description: jsonConfig.Description,
+		BaseURL:     jsonConfig.BaseURL,
+		Theme: config.ThemeConfig{
+			ColorScheme: jsonConfig.Theme.ColorScheme,
+			Font:        jsonConfig.Theme.Font,
+		},
+		Socials: jsonConfig.Socials,
+		Editor:  jsonConfig.Editor,
+	}
+
+	// Ensure socials map is initialized
+	if cfg.Socials == nil {
+		cfg.Socials = make(map[string]string)
+	}
+
+	// Save as TOML
+	err = cfg.Save()
+	if err != nil {
+		return fmt.Errorf("failed to save TOML config: %w", err)
+	}
+
+	fmt.Println("   • Successfully converted config from JSON to TOML format")
 	return nil
 }
 
