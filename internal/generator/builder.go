@@ -499,7 +499,7 @@ func (s *Site) generateIndex() error {
     <meta property="og:description" content="{{.Config.Description}}">
     <meta property="og:site_name" content="{{.Config.Title}}">
 
-    <!-- Twitter -->
+    <!-- X (Twitter) -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="{{.Config.BaseURL}}">
     <meta property="twitter:title" content="{{.Config.Title}}">
@@ -601,7 +601,7 @@ func (s *Site) generatePosts() error {
     <meta property="article:published_time" content="{{.Date.Format "2006-01-02T15:04:05Z07:00"}}">
     <meta property="article:author" content="{{.Config.Title}}">
 
-    <!-- Twitter -->
+    <!-- X (Twitter) -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="{{.Config.BaseURL}}/{{.URL}}">
     <meta property="twitter:title" content="{{.Title}}">
@@ -700,7 +700,7 @@ func (s *Site) generatePages() error {
     <meta property="og:description" content="{{.Title}} - {{.Config.Description}}">
     <meta property="og:site_name" content="{{.Config.Title}}">
 
-    <!-- Twitter -->
+    <!-- X (Twitter) -->
     <meta property="twitter:card" content="summary_large_image">
     <meta property="twitter:url" content="{{.Config.BaseURL}}/{{.URL}}">
     <meta property="twitter:title" content="{{.Title}}">

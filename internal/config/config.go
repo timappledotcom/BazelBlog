@@ -77,13 +77,14 @@ var Editors = []string{
 
 // Available social platforms
 var SocialPlatforms = []string{
-	"twitter",
+	"x",
 	"github",
 	"linkedin",
 	"facebook",
 	"instagram",
 	"youtube",
 	"mastodon",
+	"nostr",
 	"email",
 }
 
