@@ -35,18 +35,17 @@ func NewSite(name string) error {
 	}
 	defer configFile.Close()
 
-	configContent := `{
-  "site_name": "` + name + `",
-  "title": "Bazel Blog!",
-  "description": "Welcome to Bazel! This is your new static site. Edit this description in bazel.toml to make it your own.",
-  "base_url": "https://example.com",
-  "theme": {
-    "color_scheme": "pika-beach",
-    "font": "pika-serif"
-  },
-  "socials": {},
-  "editor": "auto"
-}`
+	configContent := `site_name = "` + name + `"
+title = "Bazel Blog!"
+description = "Welcome to Bazel! This is your new static site. Edit this description in bazel.toml to make it your own."
+base_url = "https://example.com"
+editor = "auto"
+
+[theme]
+color_scheme = "pika-beach"
+font = "pika-serif"
+
+[socials]`
 	_, err = configFile.WriteString(configContent)
 	if err != nil {
 		return fmt.Errorf("failed to write to config file: %w", err)
@@ -70,30 +69,30 @@ func NewSite(name string) error {
 <body>
     <h1>About Bazel</h1>
     <p>Welcome to your new static site generated with <strong>Bazel</strong>, a fast and simple static site generator.</p>
-    
+
     <h2>Getting Started</h2>
     <p>Your site is now set up and ready to use. Here's how to get started:</p>
-    
+
     <h3>Creating Posts</h3>
     <p>To create a new blog post, run:</p>
     <pre><code>bazel new post "Your Post Title"</code></pre>
     <p>This will create a new Markdown file in the <code>posts/</code> directory and open it in your default editor.</p>
-    
+
     <h3>Creating Pages</h3>
     <p>To create a new static page, run:</p>
     <pre><code>bazel new page "Your Page Title"</code></pre>
     <p>This will create a new HTML file in the <code>pages/</code> directory.</p>
-    
+
     <h3>Building Your Site</h3>
     <p>To build your site for production, run:</p>
     <pre><code>bazel build</code></pre>
     <p>This will generate all HTML files and assets in the <code>public/</code> directory.</p>
-    
+
     <h3>Development Server</h3>
     <p>To preview your site locally while developing, run:</p>
     <pre><code>bazel serve</code></pre>
     <p>This will start a local server at <code>http://localhost:3000</code> where you can preview your site.</p>
-    
+
     <h3>Configuration</h3>
     <p>You can customize your site by editing the <code>bazel.toml</code> file in your site's root directory. This includes:</p>
     <ul>
@@ -102,7 +101,7 @@ func NewSite(name string) error {
         <li><strong>Base URL for deployment</strong></li>
         <li><strong>Social media links</strong></li>
     </ul>
-    
+
     <h3>Themes</h3>
     <p>Bazel comes with built-in themes including:</p>
     <ul>
@@ -111,9 +110,9 @@ func NewSite(name string) error {
         <li><code>catppuccin-mocha</code> - A dark, modern theme</li>
         <li><code>3li7e</code> - A retro green-on-black CRT monitor theme</li>
     </ul>
-    
+
     <p>Change the theme in your <code>bazel.toml</code> configuration file.</p>
-    
+
     <h2>Next Steps</h2>
     <p>Start by creating your first post or customizing this about page. Happy blogging!</p>
 </body>
