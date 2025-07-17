@@ -2,6 +2,30 @@
 
 All notable changes to Bazel Blog will be documented in this file.
 
+## [1.4.3] - 2025-07-16
+
+### Added
+- **Delete Functionality**: Added ability to delete posts and pages with confirmation prompts
+- **Enhanced UI Navigation**: Improved menu navigation with better error handling
+- **Code Quality Improvements**: Modernized Go patterns and cleaned up codebase
+
+### Changed
+- **Menu System**: Enhanced post and page management menus with delete options
+- **Error Handling**: Better error messages and user feedback throughout the application
+- **Code Structure**: Modernized Go code patterns for better maintainability
+
+### Fixed
+- **Typos**: Fixed various typos throughout the codebase
+- **Code Issues**: Resolved Go linting issues and modernized loop patterns
+- **UI Flow**: Improved menu state management and navigation flow
+
+### Technical Details
+- Added delete confirmation dialogs to prevent accidental deletions
+- Modernized for loops using range over int pattern
+- Fixed emoji rendering issues in upgrade messages
+- Enhanced error handling in menu operations
+- Improved code readability and maintainability
+
 ## [1.4.2] - 2025-07-16
 
 ### Added

@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/charmbracelet/bubbletea"
+	tea "github.com/charmbracelet/bubbletea"
 	"github.com/yourusername/bazel_blog/internal/config"
 	"github.com/yourusername/bazel_blog/internal/generator"
 )
@@ -209,6 +209,10 @@ const (
 	PageTitleInputMenu
 	PostEditMenu
 	PageEditMenu
+	PostDeleteMenu
+	PageDeleteMenu
+	PostDeleteConfirmMenu
+	PageDeleteConfirmMenu
 )
 
 type model struct {
@@ -240,6 +244,7 @@ func RunPostMenu() {
 		choices: []string{
 			"New Post",
 			"Edit Post",
+			"Delete Post",
 			"Draft Posts",
 			"Done",
 		},
@@ -264,6 +269,7 @@ func RunPageMenu() {
 		choices: []string{
 			"New Page",
 			"Edit Page",
+			"Delete Page",
 			"Draft Pages",
 			"Organize Pages",
 			"Done",

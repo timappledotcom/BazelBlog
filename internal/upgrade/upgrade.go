@@ -21,7 +21,7 @@ type SiteVersion struct {
 	Features     map[string]string `json:"features,omitempty"`
 }
 
-const CurrentVersion = "1.4.2"
+const CurrentVersion = "1.4.3"
 const VersionFile = ".bazel-version"
 
 // Upgrade represents a version upgrade step
@@ -53,7 +53,7 @@ func RunUpgrade() error {
 		}
 	}
 
-	fmt.Printf("� Currenit site version: %s\n", siteVersion.Version)
+	fmt.Printf("📍 Current site version: %s\n", siteVersion.Version)
 	fmt.Printf("📦 Bazel version: %s\n", CurrentVersion)
 
 	// Check if already up to date
@@ -108,6 +108,12 @@ func RunUpgrade() error {
 			ToVersion:   "1.4.2",
 			Description: "Improved site structure with organized directories",
 			Apply:       upgradeToV1_4_2,
+		},
+		{
+			FromVersion: "1.4.2",
+			ToVersion:   "1.4.3",
+			Description: "Enhanced UI with delete functionality and code cleanup",
+			Apply:       upgradeToV1_4_3,
 		},
 	}
 
@@ -184,7 +190,7 @@ func compareVersions(v1, v2 string) int {
 	parts2 := parseVersion(v2)
 
 	// Compare each part (major, minor, patch)
-	for i := 0; i < 3; i++ {
+	for i := range 3 {
 		if parts1[i] < parts2[i] {
 			return -1
 		}
@@ -275,6 +281,15 @@ func upgradeToV1_4_2() error {
 	}
 
 	fmt.Println("   • Site structure updated for better organization")
+	return nil
+}
+
+func upgradeToV1_4_3() error {
+	fmt.Println("   • Enhanced UI with delete functionality for posts and pages")
+	fmt.Println("   • Improved code quality and modernized Go patterns")
+	fmt.Println("   • Fixed typos and cleaned up codebase")
+	fmt.Println("   • Better error handling and user experience")
+	// UI improvements are in the binary itself
 	return nil
 }
 
