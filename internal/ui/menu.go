@@ -2,6 +2,7 @@ package ui
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	tea "github.com/charmbracelet/bubbletea"
@@ -229,6 +230,7 @@ type model struct {
 	message            string
 	previewFont        string // Font being previewed in font menu
 	previewTheme       string // Theme being previewed in theme menu
+	selectedItem       string // Track selected item for deletion
 }
 
 func RunPostMenu() {
@@ -396,6 +398,14 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			return m.updatePostEditMenu(msg)
 		case PageEditMenu:
 			return m.updatePageEditMenu(msg)
+		case PostDeleteMenu:
+			return m.updatePostDeleteMenu(msg)
+		case PageDeleteMenu:
+			return m.updatePageDeleteMenu(msg)
+		case PostDeleteConfirmMenu:
+			return m.updatePostDeleteConfirmMenu(msg)
+		case PageDeleteConfirmMenu:
+			return m.updatePageDeleteConfirmMenu(msg)
 		}
 	}
 
@@ -416,7 +426,7 @@ func (m model) updateMainMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		}
 	case "enter":
 		// Check what menu we're in based on the choices
-		if len(m.choices) == 4 && m.choices[0] == "New Post" {
+		if len(m.choices) == 5 && m.choices[0] == "New Post" {
 			// Post menu
 			switch m.cursor {
 			case 0: // New Post
@@ -434,12 +444,25 @@ func (m model) updateMainMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 					m.cursor = 0
 					m.state = PostEditMenu
 				}
-			case 2: // Draft Posts
-				m.message = "Draft Posts functionality coming soon"
-			case 3: // Done
+			case 2: // Delete Post
+				// Load available posts and switch to delete menu
+				posts, err := generator.ListPosts()
+				if err != nil {
+					m.message = fmt.Sprintf("Error loading posts: %v", err)
+				} else if len(posts) == 0 {
+					m.message = "No posts found to delete"
+				} else {
+					m.choices = posts
+					m.cursor = 0
+					m.state = PostDeleteMenu
+				}
+			case 3: // Draft Posts
+				m.message = "Draft Posts are not implemented yet. Coming soon! Press any key to return."
+				return m, nil
+			case 4: // Done
 				return m, tea.Quit
 			}
-		} else if len(m.choices) == 5 && m.choices[0] == "New Page" {
+		} else if len(m.choices) == 6 && m.choices[0] == "New Page" {
 			// Page menu
 			switch m.cursor {
 			case 0: // New Page
@@ -457,11 +480,25 @@ func (m model) updateMainMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 					m.cursor = 0
 					m.state = PageEditMenu
 				}
-			case 2: // Draft Pages
-				m.message = "Draft Pages functionality coming soon"
-			case 3: // Organize Pages
-				m.message = "Organize Pages functionality coming soon"
-			case 4: // Done
+			case 2: // Delete Page
+				// Load available pages and switch to delete menu
+				pages, err := generator.ListPages()
+				if err != nil {
+					m.message = fmt.Sprintf("Error loading pages: %v", err)
+				} else if len(pages) == 0 {
+					m.message = "No pages found to delete"
+				} else {
+					m.choices = pages
+					m.cursor = 0
+					m.state = PageDeleteMenu
+				}
+			case 3: // Draft Pages
+				m.message = "Draft Pages are not implemented yet. Coming soon! Press any key to return."
+				return m, nil
+			case 4: // Organize Pages
+				m.message = "Organize Pages feature is not available yet. Coming soon! Press any key to return."
+				return m, nil
+			case 5: // Done
 				return m, tea.Quit
 			}
 		} else {
@@ -1084,14 +1121,20 @@ func (m model) View() string {
 
 	case PostEditMenu:
 		s.WriteString("Select a post to edit:\n\n")
-		for i, post := range m.choices {
-			cursor := " "
-			if m.cursor == i {
-				cursor = ">"
+		if len(m.choices) == 0 {
+			s.WriteString("No posts available to edit.\n")
+			s.WriteString("Create a new post first, then return to edit.\n\n")
+			s.WriteString("(Press 'esc' to go back)")
+		} else {
+			for i, post := range m.choices {
+				cursor := " "
+				if m.cursor == i {
+					cursor = ">"
+				}
+				s.WriteString(fmt.Sprintf("%s %s\n", cursor, post))
 			}
-			s.WriteString(fmt.Sprintf("%s %s\n", cursor, post))
+			s.WriteString("\n(Press Enter to edit, 'r' to retry, 'l' to refresh list, Esc to go back, Ctrl+C to quit)")
 		}
-		s.WriteString("\n(Press Enter to edit, Esc to go back, Ctrl+C to quit)")
 
 	case PageEditMenu:
 		s.WriteString("Select a page to edit:\n\n")
@@ -1103,6 +1146,56 @@ func (m model) View() string {
 			s.WriteString(fmt.Sprintf("%s %s\n", cursor, page))
 		}
 		s.WriteString("\n(Press Enter to edit, Esc to go back, Ctrl+C to quit)")
+
+	case PostDeleteMenu:
+		s.WriteString("Select a post to delete:\n\n")
+		for i, post := range m.choices {
+			cursor := " "
+			if m.cursor == i {
+				cursor = ">"
+			}
+			s.WriteString(fmt.Sprintf("%s %s\n", cursor, post))
+		}
+		s.WriteString("\n(Press Enter to delete, Esc to go back, Ctrl+C to quit)")
+
+	case PageDeleteMenu:
+		s.WriteString("Select a page to delete:\n\n")
+		for i, page := range m.choices {
+			cursor := " "
+			if m.cursor == i {
+				cursor = ">"
+			}
+			s.WriteString(fmt.Sprintf("%s %s\n", cursor, page))
+		}
+		s.WriteString("\n(Press Enter to delete, Esc to go back, Ctrl+C to quit)")
+
+	case PostDeleteConfirmMenu:
+		if m.selectedItem != "" {
+			s.WriteString(fmt.Sprintf("⚠️  Delete Post: %s\n\n", m.selectedItem))
+			s.WriteString("This action cannot be undone!\n\n")
+			confirmChoices := []string{"Yes, delete it", "No, cancel"}
+			for i, choice := range confirmChoices {
+				cursor := " "
+				if m.cursor == i {
+					cursor = ">"
+				}
+				s.WriteString(fmt.Sprintf("%s %s\n", cursor, choice))
+			}
+		}
+
+	case PageDeleteConfirmMenu:
+		if m.selectedItem != "" {
+			s.WriteString(fmt.Sprintf("⚠️  Delete Page: %s\n\n", m.selectedItem))
+			s.WriteString("This action cannot be undone!\n\n")
+			confirmChoices := []string{"Yes, delete it", "No, cancel"}
+			for i, choice := range confirmChoices {
+				cursor := " "
+				if m.cursor == i {
+					cursor = ">"
+				}
+				s.WriteString(fmt.Sprintf("%s %s\n", cursor, choice))
+			}
+		}
 	}
 
 	// Apply preview styling to the quit instruction
@@ -1129,13 +1222,15 @@ func (m model) updatePostTitleInputMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.state = MainMenu
 		m.cursor = 0
 	case "enter":
-		if m.editingTitle != "" {
-			err := generator.NewPost(m.editingTitle)
-			if err != nil {
-				m.message = fmt.Sprintf("Error creating post: %v", err)
-			} else {
-				m.message = fmt.Sprintf("Created post: %s", m.editingTitle)
-			}
+		if strings.TrimSpace(m.editingTitle) == "" {
+			m.message = "Post title cannot be empty. Please enter a title."
+			return m, nil
+		}
+		err := generator.NewPost(m.editingTitle)
+		if err != nil {
+			m.message = fmt.Sprintf("Error creating post: %v", err)
+		} else {
+			m.message = fmt.Sprintf("Created post: %s", m.editingTitle)
 		}
 		m.state = MainMenu
 		m.cursor = 0
@@ -1161,13 +1256,15 @@ func (m model) updatePageTitleInputMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 		m.state = MainMenu
 		m.cursor = 0
 	case "enter":
-		if m.editingTitle != "" {
-			err := generator.NewPage(m.editingTitle)
-			if err != nil {
-				m.message = fmt.Sprintf("Error creating page: %v", err)
-			} else {
-				m.message = fmt.Sprintf("Created page: %s", m.editingTitle)
-			}
+		if strings.TrimSpace(m.editingTitle) == "" {
+			m.message = "Page title cannot be empty. Please enter a title."
+			return m, nil
+		}
+		err := generator.NewPage(m.editingTitle)
+		if err != nil {
+			m.message = fmt.Sprintf("Error creating page: %v", err)
+		} else {
+			m.message = fmt.Sprintf("Created page: %s", m.editingTitle)
 		}
 		m.state = MainMenu
 		m.cursor = 0
@@ -1189,11 +1286,13 @@ func (m model) updatePostEditMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	switch msg.String() {
 	case "ctrl+c":
 		return m, tea.Quit
-	case "esc":
-		// Go back to main post menu
+	case "esc", "b":
+		// Go back to main post menu with proper state restoration
 		m.state = MainMenu
-		m.choices = []string{"New Post", "Edit Post", "Draft Posts", "Done"}
-		m.cursor = 0
+		m.choices = []string{"New Post", "Edit Post", "Delete Post", "Draft Posts", "Done"}
+		m.cursor = 1   // Return to "Edit Post" option
+		m.message = "" // Clear any previous messages
+		return m, nil
 	case "up", "k":
 		if m.cursor > 0 {
 			m.cursor--
@@ -1205,16 +1304,106 @@ func (m model) updatePostEditMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 	case "enter":
 		if m.cursor < len(m.choices) {
 			selectedPost := m.choices[m.cursor]
+
+			// Validate post selection
+			if selectedPost == "" {
+				m.message = formatError("Invalid post selection")
+				return m, nil
+			}
+
+			// Check if post file exists with comprehensive file validation
+			postPath := fmt.Sprintf("posts/%s.md", selectedPost)
+			fileInfo, err := os.Stat(postPath)
+			if os.IsNotExist(err) {
+				m.message = formatError(fmt.Sprintf("Post file not found: %s", selectedPost))
+				m.message += "\n" + formatInstruction("Press 'r' to refresh post list, 'esc' to go back")
+				return m, nil
+			} else if err != nil {
+				m.message = formatError(fmt.Sprintf("Error accessing post file: %v", err))
+				m.message += "\n" + formatInstruction("Press 'r' to retry, 'esc' to go back")
+				return m, nil
+			}
+
+			// Check file permissions
+			if fileInfo.Mode().Perm()&0200 == 0 {
+				m.message = formatError(fmt.Sprintf("Post file is read-only: %s", selectedPost))
+				m.message += "\n" + formatInstruction("Check file permissions, press 'r' to retry")
+				return m, nil
+			}
+
+			// Show loading state with clear feedback
+			m.message = fmt.Sprintf("🔄 Opening %s in editor...", selectedPost)
+
+			// Attempt to open in editor with enhanced error handling
+			err = generator.EditPost(selectedPost)
+			if err != nil {
+				// Enhanced error handling with specific error types and recovery guidance
+				if strings.Contains(strings.ToLower(err.Error()), "not found") {
+					m.message = formatError(fmt.Sprintf("Post not found: %s", selectedPost))
+					m.message += "\n" + formatInstruction("The post may have been moved or deleted")
+				} else if strings.Contains(strings.ToLower(err.Error()), "permission denied") {
+					m.message = formatError(fmt.Sprintf("Permission denied accessing: %s", selectedPost))
+					m.message += "\n" + formatInstruction("Check file permissions or run with appropriate privileges")
+				} else if strings.Contains(strings.ToLower(err.Error()), "editor") || strings.Contains(strings.ToLower(err.Error()), "command not found") {
+					m.message = formatError("Editor failed to launch")
+					m.message += "\n" + formatInstruction("Check editor configuration in settings or set $EDITOR environment variable")
+				} else if strings.Contains(strings.ToLower(err.Error()), "no such file") {
+					m.message = formatError(fmt.Sprintf("Editor or post file not accessible: %v", err))
+					m.message += "\n" + formatInstruction("Verify editor installation and post file location")
+				} else {
+					m.message = formatError(fmt.Sprintf("Failed to edit post: %v", err))
+					m.message += "\n" + formatInstruction("Check system resources and try again")
+				}
+
+				// Always provide recovery options
+				m.message += "\n" + formatInstruction("Press 'r' to retry, 'l' to refresh list, 'esc' to go back")
+				return m, nil
+			} else {
+				// Success feedback
+				m.message = formatSuccess(fmt.Sprintf("Successfully opened %s in editor", selectedPost))
+
+				// Return to main post menu after successful editing attempt
+				m.state = MainMenu
+				m.choices = []string{"New Post", "Edit Post", "Delete Post", "Draft Posts", "Done"}
+				m.cursor = 1 // Return to "Edit Post" option for easy re-access
+			}
+		}
+	case "r":
+		// Retry functionality - re-attempt to edit the last selected post
+		if m.cursor < len(m.choices) && len(m.choices) > 0 {
+			selectedPost := m.choices[m.cursor]
+			m.message = fmt.Sprintf("🔄 Retrying to open %s...", selectedPost)
+
 			err := generator.EditPost(selectedPost)
 			if err != nil {
-				m.message = fmt.Sprintf("Error opening post for editing: %v", err)
+				m.message = formatError(fmt.Sprintf("Retry failed: %v", err))
+				m.message += "\n" + formatInstruction("Press 'l' to refresh list, 'esc' to go back")
 			} else {
-				m.message = fmt.Sprintf("Opened %s in editor", selectedPost)
+				m.message = formatSuccess(fmt.Sprintf("Successfully opened %s in editor", selectedPost))
+				// Return to main menu on successful retry
+				m.state = MainMenu
+				m.choices = []string{"New Post", "Edit Post", "Delete Post", "Draft Posts", "Done"}
+				m.cursor = 1
 			}
-			// Return to main post menu after editing
+		}
+	case "l":
+		// Refresh post list functionality
+		m.message = "🔄 Refreshing post list..."
+		posts, err := generator.ListPosts()
+		if err != nil {
+			m.message = formatError(fmt.Sprintf("Error refreshing posts: %v", err))
+			m.message += "\n" + formatInstruction("Press 'esc' to go back")
+		} else if len(posts) == 0 {
+			m.message = formatError("No posts found")
+			m.message += "\n" + formatInstruction("Create a new post first, then return to edit")
+			// Automatically return to main menu if no posts
 			m.state = MainMenu
-			m.choices = []string{"New Post", "Edit Post", "Draft Posts", "Done"}
-			m.cursor = 0
+			m.choices = []string{"New Post", "Edit Post", "Delete Post", "Draft Posts", "Done"}
+			m.cursor = 0 // Focus on "New Post"
+		} else {
+			m.choices = posts
+			m.cursor = 0 // Reset cursor to first item
+			m.message = formatSuccess(fmt.Sprintf("Refreshed: found %d posts", len(posts)))
 		}
 	}
 	return m, nil
@@ -1252,6 +1441,138 @@ func (m model) updatePageEditMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
 			m.choices = []string{"New Page", "Edit Page", "Draft Pages", "Organize Pages", "Done"}
 			m.cursor = 0
 		}
+	}
+	return m, nil
+}
+
+// updatePostDeleteMenu handles post selection for deletion
+func (m model) updatePostDeleteMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "ctrl+c":
+		return m, tea.Quit
+	case "esc":
+		// Go back to main post menu
+		m.state = MainMenu
+		m.choices = []string{"New Post", "Edit Post", "Delete Post", "Draft Posts", "Done"}
+		m.cursor = 0
+	case "up", "k":
+		if m.cursor > 0 {
+			m.cursor--
+		}
+	case "down", "j":
+		if m.cursor < len(m.choices)-1 {
+			m.cursor++
+		}
+	case "enter":
+		if m.cursor < len(m.choices) {
+			// Store the selected item and move to confirmation menu
+			m.selectedItem = m.choices[m.cursor]
+			m.state = PostDeleteConfirmMenu
+			m.cursor = 0 // Reset cursor for Yes/No options
+		}
+	}
+	return m, nil
+}
+
+// updatePageDeleteMenu handles page selection for deletion
+func (m model) updatePageDeleteMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "ctrl+c":
+		return m, tea.Quit
+	case "esc":
+		// Go back to main page menu
+		m.state = MainMenu
+		m.choices = []string{"New Page", "Edit Page", "Delete Page", "Draft Pages", "Organize Pages", "Done"}
+		m.cursor = 0
+	case "up", "k":
+		if m.cursor > 0 {
+			m.cursor--
+		}
+	case "down", "j":
+		if m.cursor < len(m.choices)-1 {
+			m.cursor++
+		}
+	case "enter":
+		if m.cursor < len(m.choices) {
+			// Store the selected item and move to confirmation menu
+			m.selectedItem = m.choices[m.cursor]
+			m.state = PageDeleteConfirmMenu
+			m.cursor = 0 // Reset cursor for Yes/No options
+		}
+	}
+	return m, nil
+}
+
+// updatePostDeleteConfirmMenu handles post deletion confirmation
+func (m model) updatePostDeleteConfirmMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "ctrl+c":
+		return m, tea.Quit
+	case "esc":
+		// Go back to delete menu
+		m.state = PostDeleteMenu
+		m.cursor = 0
+	case "up", "k":
+		if m.cursor > 0 {
+			m.cursor--
+		}
+	case "down", "j":
+		if m.cursor < 2 { // Only Yes/No options
+			m.cursor++
+		}
+	case "enter":
+		if m.cursor == 0 { // Yes - Delete
+			if m.selectedItem != "" {
+				err := generator.DeletePost(m.selectedItem)
+				if err != nil {
+					m.message = fmt.Sprintf("Error deleting post: %v", err)
+				} else {
+					m.message = fmt.Sprintf("Successfully deleted post: %s", m.selectedItem)
+				}
+			}
+		}
+		// Return to main post menu regardless of choice
+		m.state = MainMenu
+		m.choices = []string{"New Post", "Edit Post", "Delete Post", "Draft Posts", "Done"}
+		m.cursor = 0
+		m.selectedItem = "" // Clear selected item
+	}
+	return m, nil
+}
+
+// updatePageDeleteConfirmMenu handles page deletion confirmation
+func (m model) updatePageDeleteConfirmMenu(msg tea.KeyMsg) (tea.Model, tea.Cmd) {
+	switch msg.String() {
+	case "ctrl+c":
+		return m, tea.Quit
+	case "esc":
+		// Go back to delete menu
+		m.state = PageDeleteMenu
+		m.cursor = 0
+	case "up", "k":
+		if m.cursor > 0 {
+			m.cursor--
+		}
+	case "down", "j":
+		if m.cursor < 2 { // Only Yes/No options
+			m.cursor++
+		}
+	case "enter":
+		if m.cursor == 0 { // Yes - Delete
+			if m.selectedItem != "" {
+				err := generator.DeletePage(m.selectedItem)
+				if err != nil {
+					m.message = fmt.Sprintf("Error deleting page: %v", err)
+				} else {
+					m.message = fmt.Sprintf("Successfully deleted page: %s", m.selectedItem)
+				}
+			}
+		}
+		// Return to main page menu regardless of choice
+		m.state = MainMenu
+		m.choices = []string{"New Page", "Edit Page", "Delete Page", "Draft Pages", "Organize Pages", "Done"}
+		m.cursor = 0
+		m.selectedItem = "" // Clear selected item
 	}
 	return m, nil
 }

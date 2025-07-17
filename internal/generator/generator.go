@@ -216,15 +216,57 @@ Happy blogging! 🎉`
 }
 
 func NewPost(title string) error {
-	// Replace spaces with underscores for filename
-	filename := fmt.Sprintf("posts/%s.md", strings.ReplaceAll(title, " ", "_"))
-	if _, err := os.Stat(filename); err == nil {
-		return fmt.Errorf("post already exists")
+	// Validate post title
+	if strings.TrimSpace(title) == "" {
+		return fmt.Errorf("post title cannot be empty")
 	}
 
+	// Validate title length and characters
+	if len(title) > 100 {
+		return fmt.Errorf("post title too long (max 100 characters)")
+	}
+
+	// Check for invalid characters in title
+	invalidChars := []string{"/", "\\", ":", "*", "?", "\"", "<", ">", "|"}
+	for _, char := range invalidChars {
+		if strings.Contains(title, char) {
+			return fmt.Errorf("post title contains invalid character: %s", char)
+		}
+	}
+
+	// Create posts directory if it doesn't exist
+	postsDir := "posts"
+	if err := os.MkdirAll(postsDir, 0755); err != nil {
+		return fmt.Errorf("failed to create posts directory: %w", err)
+	}
+
+	// Generate filename with better sanitization
+	sanitizedTitle := strings.ReplaceAll(title, " ", "_")
+	// Remove any remaining problematic characters
+	sanitizedTitle = strings.Map(func(r rune) rune {
+		if r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' || r == '_' || r == '-' {
+			return r
+		}
+		return '_'
+	}, sanitizedTitle)
+
+	filename := fmt.Sprintf("posts/%s.md", sanitizedTitle)
+
+	// Check if post already exists
+	if _, err := os.Stat(filename); err == nil {
+		return fmt.Errorf("post already exists: %s", sanitizedTitle)
+	}
+
+	// Create the post file with enhanced error handling
 	postFile, err := os.Create(filename)
 	if err != nil {
-		return fmt.Errorf("failed to create post: %w", err)
+		if os.IsPermission(err) {
+			return fmt.Errorf("permission denied creating post file: %s", filename)
+		} else if os.IsExist(err) {
+			return fmt.Errorf("post file already exists: %s", filename)
+		} else {
+			return fmt.Errorf("failed to create post file: %w", err)
+		}
 	}
 	defer postFile.Close()
 
@@ -233,13 +275,34 @@ func NewPost(title string) error {
 	dateStr := now.Format("January 2, 2006")
 	timeStr := now.Format("15:04")
 
+	// Create post content with proper escaping
 	content := fmt.Sprintf("---\ntitle: %s\ndate: %s\ntime: %s\n---\n\nStart writing here...\n", title, dateStr, timeStr)
+
+	// Write content with error handling
 	_, err = postFile.WriteString(content)
 	if err != nil {
+		// Clean up the file if writing fails
+		postFile.Close()
+		os.Remove(filename)
 		return fmt.Errorf("failed to write post content: %w", err)
 	}
 
-	return openInEditor(filename)
+	// Ensure content is written to disk
+	if err := postFile.Sync(); err != nil {
+		return fmt.Errorf("failed to save post content: %w", err)
+	}
+
+	// Close file before opening in editor
+	postFile.Close()
+
+	// Open in editor with enhanced error handling
+	err = openInEditor(filename)
+	if err != nil {
+		// Don't delete the file if editor fails - user can still access it
+		return fmt.Errorf("post created successfully but failed to open editor: %w", err)
+	}
+
+	return nil
 }
 
 func NewPage(title string) error {
@@ -363,4 +426,30 @@ func openInEditor(filename string) error {
 	cmd.Stderr = os.Stderr
 
 	return cmd.Run()
+}
+
+func DeletePost(title string) error {
+	// Check for .md file first
+	filename := fmt.Sprintf("posts/%s.md", title)
+	if _, err := os.Stat(filename); err == nil {
+		return os.Remove(filename)
+	}
+
+	return fmt.Errorf("post not found: %s", title)
+}
+
+func DeletePage(title string) error {
+	// Check for .md file first
+	filename := fmt.Sprintf("pages/%s.md", title)
+	if _, err := os.Stat(filename); err == nil {
+		return os.Remove(filename)
+	}
+
+	// Check for .html file
+	filename = fmt.Sprintf("pages/%s.html", title)
+	if _, err := os.Stat(filename); err == nil {
+		return os.Remove(filename)
+	}
+
+	return fmt.Errorf("page not found: %s", title)
 }
