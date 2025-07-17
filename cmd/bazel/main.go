@@ -11,7 +11,7 @@ import (
 	"github.com/yourusername/bazel_blog/internal/upgrade"
 )
 
-const Version = "1.4.3"
+const Version = "1.4.4"
 
 func main() {
 	if len(os.Args) < 2 {

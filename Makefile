@@ -1,7 +1,7 @@
 # Bazel Blog - Static Site Generator
 # Makefile for building and packaging
 
-VERSION := 1.4.3
+VERSION := 1.4.4
 BINARY_NAME := bazel
 PACKAGE_NAME := bazel-blog
 
